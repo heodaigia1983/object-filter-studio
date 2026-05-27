@@ -1,0 +1,45 @@
+{
+  "name": "Object Filter Studio V2",
+  "displayName": "Object Filter Studio V2",
+  "description": "Advanced IFC object filtering and colorization by multiple criteria",
+  "version": "2.0.0",
+  "author": "Trimble Connect",
+  "license": "MIT",
+  "trimbleConnect": {
+    "minVersion": "1.0.0",
+    "maxVersion": "99.0.0"
+  },
+  "icons": {
+    "128": "icon-128.png"
+  },
+  "activationEvents": [
+    "onCommand:objectFilterStudio.open"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "objectFilterStudio.open",
+        "title": "Mở Object Filter Studio V2",
+        "category": "Object Filter"
+      }
+    ],
+    "views": {
+      "objectFilterPanel": {
+        "id": "objectFilterStudio.view",
+        "name": "Object Filter Studio V2",
+        "type": "webview"
+      }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "objectFilterStudio.open",
+          "group": "navigation",
+          "when": "view == objectFilterStudio.view"
+        }
+      ]
+    }
+  },
+  "main": "app.js",
+  "dependencies": []
+}

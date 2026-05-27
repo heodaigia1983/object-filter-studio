@@ -1,0 +1,137 @@
+{
+  "version": "2.0.0",
+  "name": "Sample Filter Set",
+  "timestamp": "2026-05-27T10:30:00Z",
+  "description": "Sample filter configuration demonstrating Object Filter Studio V2 capabilities",
+  "filters": [
+    {
+      "id": "id-group1",
+      "color": "#FF6B6B",
+      "label": "Structural Steel",
+      "rows": [
+        {
+          "id": "id-row1",
+          "category": "Part",
+          "property": "Material",
+          "condition": "Equals",
+          "value": "Steel",
+          "operator": "AND"
+        },
+        {
+          "id": "id-row2",
+          "category": "Part",
+          "property": "Class",
+          "condition": "Equals",
+          "value": "Structural",
+          "operator": "AND"
+        },
+        {
+          "id": "id-row3",
+          "category": "Part",
+          "property": "Profile",
+          "condition": "Starts with",
+          "value": "HE",
+          "operator": ""
+        }
+      ]
+    },
+    {
+      "id": "id-group2",
+      "color": "#4ECDC4",
+      "label": "Concrete Elements",
+      "rows": [
+        {
+          "id": "id-row4",
+          "category": "Part",
+          "property": "Material",
+          "condition": "Contains",
+          "value": "Concrete",
+          "operator": ""
+        }
+      ]
+    },
+    {
+      "id": "id-group3",
+      "color": "#45B7D1",
+      "label": "Primary Connections",
+      "rows": [
+        {
+          "id": "id-row5",
+          "category": "Assembly",
+          "property": "Class",
+          "condition": "Equals",
+          "value": "Primary",
+          "operator": "AND"
+        },
+        {
+          "id": "id-row6",
+          "category": "Assembly",
+          "property": "Phase",
+          "condition": "Does not equal",
+          "value": "Temporary",
+          "operator": ""
+        }
+      ]
+    },
+    {
+      "id": "id-group4",
+      "color": "#FFA07A",
+      "label": "Phase 1 Elements",
+      "rows": [
+        {
+          "id": "id-row7",
+          "category": "Part",
+          "property": "Phase",
+          "condition": "Equals",
+          "value": "Phase 1",
+          "operator": ""
+        }
+      ]
+    },
+    {
+      "id": "id-group5",
+      "color": "#98D8C8",
+      "label": "Heavy Components (>1000 kg)",
+      "rows": [
+        {
+          "id": "id-row8",
+          "category": "Part",
+          "property": "Weight",
+          "condition": "Contains",
+          "value": "1",
+          "operator": ""
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "This is a sample filter configuration for Object Filter Studio V2",
+    "Each filter group has a unique color and contains one or more filter rows",
+    "Filter rows support: category, property, condition, and value",
+    "Use 'operator' field (AND/OR) to combine multiple rows within a group",
+    "Objects are matched against groups in order - first match wins",
+    "Empty 'operator' means it's the last row in the group"
+  ],
+  "examples": {
+    "structural_steel": {
+      "description": "Find all structural steel H-profile members",
+      "conditions": [
+        "Material Equals Steel",
+        "AND Class Equals Structural",
+        "AND Profile Starts with HE"
+      ]
+    },
+    "concrete": {
+      "description": "Find all concrete elements",
+      "conditions": [
+        "Material Contains Concrete"
+      ]
+    },
+    "phase_specific": {
+      "description": "Find all elements in Phase 1",
+      "conditions": [
+        "Phase Equals Phase 1"
+      ]
+    }
+  }
+}

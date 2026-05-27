@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Filter Studio V2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Object Filter Studio V2</h1>
+            <div class="header-actions">
+                <button id="resetBtn" class="btn btn-secondary" title="Đặt lại màu ban đầu">
+                    <span class="icon">↻</span> Đặt lại
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Set Info -->
+        <div class="filter-set-info">
+            <div class="form-group">
+                <label for="filterSetName">Tên bộ lọc:</label>
+                <input type="text" id="filterSetName" placeholder="Nhập tên bộ lọc..." value="Default">
+            </div>
+        </div>
+
+        <!-- Filter Groups Container -->
+        <div class="filters-container">
+            <div id="filterGroups"></div>
+        </div>
+
+        <!-- Add Group Button -->
+        <div class="action-buttons">
+            <button id="addGroupBtn" class="btn btn-primary btn-large">
+                <span class="icon">+</span> Thêm nhóm lọc
+            </button>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h3>Kiểm soát</h3>
+            <div class="button-group">
+                <button id="applyBtn" class="btn btn-success">Áp dụng bộ lọc</button>
+                <button id="saveBtn" class="btn btn-info">💾 Lưu</button>
+                <button id="loadBtn" class="btn btn-info">📂 Tải</button>
+                <button id="exportBtn" class="btn btn-info">📥 Xuất</button>
+                <button id="importBtn" class="btn btn-info">📤 Nhập</button>
+                <input type="file" id="fileInput" accept=".json" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Status Info -->
+        <div class="status-info">
+            <div id="statusMessage" class="status-message">Sẵn sàng</div>
+            <div id="objectCount" class="object-count">Các đối tượng được tìm: 0 / 0</div>
+        </div>
+    </div>
+
+    <!-- Modal for Load -->
+    <div id="loadModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Tải bộ lọc</h2>
+            <div id="savedFilters" class="saved-filters-list"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeLoadModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="ifc-properties.js"></script>
+    <script src="filter-engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
