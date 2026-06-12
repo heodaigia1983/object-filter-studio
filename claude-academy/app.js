@@ -138,6 +138,7 @@ function confetti() {
 // ───────────────────────── Bản quyền ─────────────────────────
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
+const PHONE = "05.666668.47";
 
 // ───────────────────────── Tiện ích ─────────────────────────
 const app = document.getElementById("app");
@@ -207,7 +208,7 @@ function renderLogin() {
             <span style="text-align:left">${esc(info.name)}<br><small>${esc(em)}</small></span>
           </button>`).join("")}
       </div>` : ""}
-      <p class="foot-note" style="padding-top:16px">${COPYRIGHT}<br>Liên hệ: <a href="mailto:${CONTACT}" style="color:var(--violet);font-weight:700">${CONTACT}</a></p>
+      <p class="foot-note" style="padding-top:16px">${COPYRIGHT}<br>Liên hệ: <a href="mailto:${CONTACT}" style="color:var(--violet);font-weight:700">${CONTACT}</a> · ☎ <a href="tel:${PHONE.replace(/\./g, "")}" style="color:var(--violet);font-weight:700">${PHONE}</a></p>
     </div>
   </div>`;
   const err = document.getElementById("loginErr");
@@ -419,6 +420,7 @@ function renderProfile() {
       <p>Ứng dụng học nhanh các khoá Claude của Anthropic Academy bằng tiếng Việt.</p>
       <p style="margin-top:8px"><b>${COPYRIGHT}</b></p>
       <p>Liên hệ tác giả: <a href="mailto:${CONTACT}" style="color:var(--violet);font-weight:700">${CONTACT}</a></p>
+      <p>Điện thoại: <a href="tel:${PHONE.replace(/\./g, "")}" style="color:var(--violet);font-weight:700">☎ ${PHONE}</a></p>
       <p style="margin-top:8px">Nội dung biên soạn theo đề cương khoá học công khai của Anthropic Academy. Claude và Anthropic là thương hiệu của Anthropic PBC.</p>
     </div>
     <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>

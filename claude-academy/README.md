@@ -36,7 +36,7 @@
 
 ## Bản quyền
 
-**© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.** — Liên hệ: heodaigia1983@gmail.com
+**© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.** — Liên hệ: heodaigia1983@gmail.com · ☎ 05.666668.47
 
 Xem chi tiết tại file [LICENSE](../LICENSE). Nội dung học tập được biên soạn lại bằng tiếng Việt theo đề cương các khoá học công khai của Anthropic Academy. Claude và Anthropic là thương hiệu của Anthropic PBC.
 
