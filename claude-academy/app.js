@@ -89,36 +89,39 @@ const TTS = {
   chunks: [], i: 0, playing: false, rate: 1, gen: 0,
   viVoice() { return speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("vi")) || null; },
   _speakCurrent() {
-    if (this.i >= this.chunks.length) { this.playing = false; this.chunks = []; this.i = 0; updateAudioDock(); return; }
+    if (this.i >= this.chunks.length) { this.playing = false; this.chunks = []; this.i = 0; updateAudioDock(); MUSIC.onTTS(false); return; }
     const g = ++this.gen;
     const u = new SpeechSynthesisUtterance(this.chunks[this.i]);
     u.lang = "vi-VN"; u.rate = this.rate;
     const v = this.viVoice(); if (v) u.voice = v;
     u.onend = () => { if (g !== this.gen || !this.playing) return; this.i++; this._speakCurrent(); };
-    u.onerror = () => { if (g !== this.gen) return; this.playing = false; updateAudioDock(); };
-    speechSynthesis.speak(u);
+    u.onerror = () => { if (g !== this.gen) return; this.playing = false; updateAudioDock(); MUSIC.onTTS(false); };
+    try { speechSynthesis.speak(u); }
+    catch { this.playing = false; updateAudioDock(); MUSIC.onTTS(false); } // lỗi đọc → không kẹt trạng thái
   },
   speak(text) {
     this.stop();
+    MUSIC.onTTS(true); // đang đọc bài → tắt nhạc nền
     this.chunks = (text.match(/[^.!?…]+[.!?…]*/g) || [text]).map(s => s.trim()).filter(Boolean);
     this.i = 0; this.playing = true;
     this._speakCurrent();
   },
   toggle(text) {
     if (this.playing) this.pause();
-    else if (this.chunks.length && this.i < this.chunks.length) { this.playing = true; this._speakCurrent(); }
+    else if (this.chunks.length && this.i < this.chunks.length) { MUSIC.onTTS(true); this.playing = true; this._speakCurrent(); }
     else this.speak(text);
   },
   setRate(r) { this.rate = r; if (this.playing) { this.gen++; speechSynthesis.cancel(); this._speakCurrent(); } },
-  pause() { this.playing = false; this.gen++; speechSynthesis.cancel(); },
-  stop() { this.playing = false; this.gen++; this.chunks = []; this.i = 0; speechSynthesis.cancel(); }
+  pause() { this.playing = false; this.gen++; speechSynthesis.cancel(); MUSIC.onTTS(false); },
+  stop() { this.playing = false; this.gen++; this.chunks = []; this.i = 0; speechSynthesis.cancel(); MUSIC.onTTS(false); }
 };
 if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
 // ── Phản hồi xúc giác (rung) + âm thanh chạm — bật/tắt được trong Hồ sơ ──
 const FX = {
   sound: loadJSON("ca-fx-sound", true),
-  haptic: loadJSON("ca-fx-haptic", true)
+  haptic: loadJSON("ca-fx-haptic", true),
+  music: loadJSON("ca-fx-music", true)
 };
 function setFX(key, val) { FX[key] = val; saveJSON("ca-fx-" + key, val); }
 function vibrate(pattern) {
@@ -172,6 +175,96 @@ function sfx(kind) {
   } catch { /* không có audio cũng không sao */ }
 }
 
+// ── Nhạc nền lo-fi không lời, tự sinh bằng WebAudio (không cần file nhạc) ──
+// Vòng hợp âm Cmaj7 → Am7 → Fmaj7 → G6 dạng pad êm + nốt gảy pentatonic ngẫu nhiên.
+// Tự TẮT khi nghe bài giảng (TTS) hoặc mở video; tự BẬT lại khi đọc xong.
+const MUSIC = {
+  playing: false, master: null, _gen: 0, _chordT: null, _pluckT: null,
+  _ttsHold: false, videoHold: false,
+  start() {
+    if (!FX.music || this.playing || this._ttsHold || this.videoHold || !CURRENT) return;
+    let ctx;
+    try { ctx = ctxReady(); } catch { return; }
+    if (ctx.state !== "running") return; // cần thao tác chạm trước (chính sách autoplay)
+    this.playing = true;
+    const gen = ++this._gen;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(.0001, ctx.currentTime);
+    master.gain.exponentialRampToValueAtTime(.05, ctx.currentTime + 2.5);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 1100;
+    master.connect(lp); lp.connect(ctx.destination);
+    this.master = master;
+    const chords = [
+      [130.81, 164.81, 196.00, 246.94], // Cmaj7
+      [110.00, 130.81, 164.81, 196.00], // Am7
+      [87.31, 110.00, 130.81, 164.81],  // Fmaj7
+      [98.00, 123.47, 146.83, 164.81]   // G6
+    ];
+    let ci = 0;
+    const playChord = () => {
+      if (gen !== this._gen) return;
+      const t = ctx.currentTime, dur = 9;
+      chords[ci % chords.length].forEach(f => {
+        [0, 3].forEach(det => { // 2 lớp lệch nhẹ cho âm ấm
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = "sine"; o.frequency.value = f; o.detune.value = det;
+          g.gain.setValueAtTime(.0001, t);
+          g.gain.linearRampToValueAtTime(.5, t + 2.2);
+          g.gain.setValueAtTime(.5, t + dur - 2.2);
+          g.gain.linearRampToValueAtTime(.0001, t + dur);
+          o.connect(g); g.connect(master);
+          o.start(t); o.stop(t + dur + .1);
+        });
+      });
+      ci++;
+      this._chordT = setTimeout(playChord, (dur - 2.2) * 1000); // gối đầu cho liền mạch
+    };
+    const pluck = () => {
+      if (gen !== this._gen) return;
+      const notes = [523.25, 587.33, 659.25, 783.99, 880.00]; // pentatonic Đô trưởng
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+      g.gain.setValueAtTime(.2, t);
+      g.gain.exponentialRampToValueAtTime(.0001, t + 1.1);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t + 1.2);
+      this._pluckT = setTimeout(pluck, 1800 + Math.random() * 2800);
+    };
+    playChord();
+    this._pluckT = setTimeout(pluck, 2200);
+  },
+  stop() {
+    if (!this.playing) return;
+    this.playing = false; this._gen++;
+    clearTimeout(this._chordT); clearTimeout(this._pluckT);
+    const m = this.master; this.master = null;
+    if (m && audioCtx) {
+      try {
+        m.gain.cancelScheduledValues(audioCtx.currentTime);
+        m.gain.setValueAtTime(Math.max(m.gain.value, .0001), audioCtx.currentTime);
+        m.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + .5); // tắt êm
+      } catch { /* bỏ qua */ }
+      setTimeout(() => { try { m.disconnect(); } catch { /* bỏ qua */ } }, 700);
+    }
+  },
+  // cố gắng phát (gọi sau mỗi lần chạm / sau khi TTS kết thúc)
+  autostart() {
+    if (!FX.music || this.playing || this._ttsHold || this.videoHold || !CURRENT) return;
+    let ctx;
+    try { ctx = ctxReady(); } catch { return; }
+    if (ctx.state === "running") this.start();
+    else if (ctx.resume) ctx.resume().then(() => this.start()).catch(() => {});
+  },
+  // TTS bắt đầu đọc → tắt nhạc; đọc xong / tạm dừng → bật lại
+  onTTS(active) {
+    this._ttsHold = active;
+    if (active) this.stop(); else this.autostart();
+  }
+};
+
 function confetti() {
   const colors = ["#7c3aed", "#f06595", "#34c98e", "#f5a623", "#4dabf7"];
   const box = document.createElement("div");
@@ -218,7 +311,9 @@ function backRow(href, label) {
 }
 
 // ───────────────────────── Khung: app bar + bottom nav ─────────────────────────
+let TAB = null;
 function renderChrome(tab) {
+  TAB = tab;
   const u = user();
   if (!u) { appbar.hidden = true; bottomnav.hidden = true; return; }
   appbar.hidden = false; bottomnav.hidden = false;
@@ -226,8 +321,14 @@ function renderChrome(tab) {
     <div class="appbar-in">
       <a class="avatar" href="#/profile">${esc((u.name || "?")[0].toUpperCase())}</a>
       <a class="appbar-name" href="#/profile"><small>CLAUDE ACADEMY</small><b>${esc(u.name)}</b></a>
+      <button class="music-btn ${FX.music ? "" : "off"}" id="musicBtn" title="Nhạc nền học tập">🎵</button>
       <a class="streak-chip" href="#/streaks">🔥 ${streak()}</a>
     </div>`;
+  document.getElementById("musicBtn").onclick = () => {
+    setFX("music", !FX.music);
+    if (FX.music) MUSIC.autostart(); else MUSIC.stop();
+    renderChrome(TAB);
+  };
   const tabs = [
     ["#/", "📚", "Học", "home"],
     ["#/explore", "🧭", "Khám phá", "explore"],
@@ -466,9 +567,11 @@ function renderProfile() {
     </div>
     <h2 class="sec-title pop">Cài đặt trải nghiệm</h2>
     <div class="action-stack">
+      <button class="btn pressable" id="musicTg">${FX.music ? "🎵 Nhạc nền học tập: BẬT" : "🎵 Nhạc nền học tập: TẮT"}</button>
       <button class="btn pressable" id="soundTg">${FX.sound ? "🔊 Âm thanh chạm: BẬT" : "🔇 Âm thanh chạm: TẮT"}</button>
       <button class="btn pressable" id="hapticTg">${FX.haptic ? "📳 Rung phản hồi: BẬT" : "📴 Rung phản hồi: TẮT"}</button>
     </div>
+    <p class="foot-note" style="text-align:left;padding:8px 4px 0">🎵 Nhạc lo-fi êm tự sinh trong app, không lời — tự tắt khi nghe bài giảng hoặc xem video, đọc xong tự bật lại. Bật/tắt nhanh bằng nút 🎵 trên thanh trên cùng.</p>
     <div class="action-stack" style="margin-top:12px">
       <button class="btn pressable" id="themeBtn">🌓 Đổi giao diện sáng/tối</button>
       <button class="btn btn-ghost pressable" id="logoutBtn">Đăng xuất</button>
@@ -484,6 +587,11 @@ function renderProfile() {
     </div>
     <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>
   </div>`;
+  document.getElementById("musicTg").onclick = () => {
+    setFX("music", !FX.music);
+    if (FX.music) MUSIC.autostart(); else MUSIC.stop();
+    renderProfile();
+  };
   document.getElementById("soundTg").onclick = () => {
     setFX("sound", !FX.sound);
     if (FX.sound) tap("nav"); // nghe thử ngay khi bật
@@ -560,6 +668,7 @@ function renderCourse(cid) {
     card.onclick = () => {
       if (card.dataset.loaded) return;
       card.dataset.loaded = "1";
+      MUSIC.videoHold = true; MUSIC.stop(); // xem video → tắt nhạc nền
       TTS.stop();
       const id = card.dataset.vid;
       card.querySelector(".video-thumb").innerHTML =
@@ -753,6 +862,7 @@ if (localStorage.getItem("ca-theme") === "dark") document.documentElement.classL
 // ───────────────────────── Router ─────────────────────────
 function route() {
   window.scrollTo(0, 0);
+  MUSIC.videoHold = false; // rời trang có video → cho phép nhạc nền trở lại
   if (!CURRENT || !USERS[CURRENT]) return renderLogin();
   if (!P) loadUserProgress();
   const h = location.hash.slice(2);
@@ -773,11 +883,17 @@ route();
 // Mọi nút, link, menu khi chạm đều rung nhẹ + tiếng "tách" tức thì.
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest("button, a, select, .pressable, .fc-stage");
-  if (!el || el.disabled) return;
-  const isNav = el.classList.contains("nav-item");
-  vibrate(isNav ? 12 : 8);
-  tap(isNav ? "nav" : "tap");
+  if (el && !el.disabled) {
+    const isNav = el.classList.contains("nav-item");
+    vibrate(isNav ? 12 : 8);
+    tap(isNav ? "nav" : "tap");
+  }
+  // nhạc nền chỉ được phép phát sau thao tác chạm đầu tiên (chính sách autoplay của trình duyệt)
+  MUSIC.autostart();
 }, { passive: true });
+
+// trạng thái chỉ-đọc phục vụ kiểm thử tự động
+window.__ca = { get music() { return { playing: MUSIC.playing, enabled: FX.music, ttsHold: MUSIC._ttsHold, videoHold: MUSIC.videoHold }; } };
 
 // ───────────────────────── PWA: service worker ─────────────────────────
 if ("serviceWorker" in navigator && location.protocol === "https:") {
