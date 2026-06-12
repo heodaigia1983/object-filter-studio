@@ -998,3 +998,27 @@ for (const c of COURSES) {
   c.quiz.push(...e.quiz);
   c.lessons.forEach(l => { if (e.art2[l.id]) l.art2 = e.art2[l.id]; });
 }
+
+// ════════════════ Video minh hoạ chính thức (YouTube — nhúng vào trang khoá học) ════════════════
+// Video tiếng Anh; trình phát được cấu hình ưu tiên phụ đề tiếng Việt (tự dịch của YouTube).
+const COURSE_VIDEOS = {
+  "claude-101": [
+    { id: "vUdNaAAc4FY", title: "How we built Artifacts with Claude", by: "Anthropic" }
+  ],
+  "prompt-eng": [
+    { id: "ysPbXH0LpIE", title: "Prompting 101", by: "Anthropic · Code w/ Claude" }
+  ],
+  "claude-code": [
+    { id: "gv0WHhKelSE", title: "Claude Code best practices", by: "Anthropic · Code w/ Claude" }
+  ],
+  "claude-api": [
+    { id: "TqC1qOfiVcQ", title: "Claude Agent SDK — Full Workshop", by: "Thariq Shihipar · Anthropic" }
+  ],
+  "mcp": [
+    { id: "CQywdSdi5iA", title: "The Model Context Protocol (MCP)", by: "Anthropic · các tác giả MCP" }
+  ],
+  "agent-skills": [
+    { id: "CEvIs9y1uog", title: "Don't Build Agents, Build Skills Instead", by: "Barry Zhang & Mahesh Murag · Anthropic" }
+  ]
+};
+for (const c of COURSES) c.videos = COURSE_VIDEOS[c.id] || [];

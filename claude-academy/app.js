@@ -531,6 +531,17 @@ function renderCourse(cid) {
         <span class="lr-go">›</span>
       </a>`).join("")}
     </div>
+    ${c.videos.length ? `
+    <h2 class="sec-title pop">🎬 Video minh hoạ <small>từ Anthropic</small></h2>
+    ${c.videos.map(v => `
+    <div class="video-card clay shimmer pressable pop" data-vid="${v.id}" role="button" tabindex="0">
+      <div class="video-thumb">
+        <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="${esc(v.title)}" loading="lazy">
+        <span class="video-play">▶</span>
+      </div>
+      <div class="video-meta"><b>${esc(v.title)}</b><small>${esc(v.by)} · tiếng Anh — bật được phụ đề tiếng Việt</small></div>
+    </div>`).join("")}
+    <p class="foot-note" style="padding:8px 4px 14px;text-align:left">💡 Phụ đề tiếng Việt: trong video bấm ⚙️ → Phụ đề (Subtitles) → Tự động dịch (Auto-translate) → Tiếng Việt. Cần có mạng để xem.</p>` : ""}
     <div class="action-stack">
       <button class="btn btn-primary pressable" id="quizBtn">📝 Làm quiz (${c.quiz.length} câu)</button>
       <button class="btn pressable" id="cardBtn">🃏 Ôn flashcard (${c.cards.length} thẻ)</button>
@@ -543,6 +554,20 @@ function renderCourse(cid) {
   </div>`;
   document.getElementById("quizBtn").onclick = () => go(`#/quiz/${c.id}`);
   document.getElementById("cardBtn").onclick = () => go(`#/cards/${c.id}`);
+  // Nhúng YouTube khi người dùng bấm vào ảnh xem trước (giữ trang nhẹ, không tải sẵn player).
+  // Tham số cc_lang_pref=vi ưu tiên phụ đề tiếng Việt nếu video có; hl=vi để giao diện player tiếng Việt.
+  app.querySelectorAll(".video-card").forEach(card => {
+    card.onclick = () => {
+      if (card.dataset.loaded) return;
+      card.dataset.loaded = "1";
+      TTS.stop();
+      const id = card.dataset.vid;
+      card.querySelector(".video-thumb").innerHTML =
+        `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=vi&hl=vi"
+          title="Video bài giảng" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen></iframe>`;
+    };
+  });
 }
 
 // ───────────────────────── Bài học ─────────────────────────
