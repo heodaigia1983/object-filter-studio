@@ -41,18 +41,21 @@ function logout() {
   P = null;
 }
 function user() { return CURRENT ? { email: CURRENT, ...USERS[CURRENT] } : null; }
-function firstName(n) { const p = (n || "").trim().split(/\s+/); return p[p.length - 1] || "bạn"; }
 
 // ───────────────────────── Tiến độ & streak ─────────────────────────
+// Ngày tính theo GIỜ ĐỊA PHƯƠNG (không dùng UTC) để học sáng sớm không bị ghi nhầm sang hôm trước
+function dayKey(d = new Date()) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
 function markStudyDay() {
-  const d = new Date().toISOString().slice(0, 10);
+  const d = dayKey();
   if (!P.days.includes(d)) P.days.push(d);
 }
 function streak() {
   const set = new Set(P.days);
   let n = 0; const d = new Date();
-  if (!set.has(d.toISOString().slice(0, 10))) d.setDate(d.getDate() - 1);
-  while (set.has(d.toISOString().slice(0, 10))) { n++; d.setDate(d.getDate() - 1); }
+  if (!set.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  while (set.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); }
   return n;
 }
 function courseProgress(c) {
@@ -80,21 +83,35 @@ function nextLesson() {
 }
 
 // ───────────────────────── Âm thanh: TTS + hiệu ứng + confetti ─────────────────────────
+// Đọc theo TỪNG CÂU: trên Android Chrome lệnh pause() của TTS thường bị bỏ qua,
+// nên tạm dừng = huỷ câu hiện tại và ghi nhớ vị trí; đọc tiếp = phát lại từ câu đó.
 const TTS = {
-  playing: false, rate: 1,
+  chunks: [], i: 0, playing: false, rate: 1, gen: 0,
   viVoice() { return speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("vi")) || null; },
-  speak(text) {
-    this.stop();
-    const u = new SpeechSynthesisUtterance(text);
+  _speakCurrent() {
+    if (this.i >= this.chunks.length) { this.playing = false; this.chunks = []; this.i = 0; updateAudioDock(); return; }
+    const g = ++this.gen;
+    const u = new SpeechSynthesisUtterance(this.chunks[this.i]);
     u.lang = "vi-VN"; u.rate = this.rate;
     const v = this.viVoice(); if (v) u.voice = v;
-    u.onend = u.onerror = () => { this.playing = false; updateAudioDock(); };
-    this.playing = true;
+    u.onend = () => { if (g !== this.gen || !this.playing) return; this.i++; this._speakCurrent(); };
+    u.onerror = () => { if (g !== this.gen) return; this.playing = false; updateAudioDock(); };
     speechSynthesis.speak(u);
   },
-  pause() { speechSynthesis.pause(); this.playing = false; },
-  resume() { speechSynthesis.resume(); this.playing = true; },
-  stop() { speechSynthesis.cancel(); this.playing = false; }
+  speak(text) {
+    this.stop();
+    this.chunks = (text.match(/[^.!?…]+[.!?…]*/g) || [text]).map(s => s.trim()).filter(Boolean);
+    this.i = 0; this.playing = true;
+    this._speakCurrent();
+  },
+  toggle(text) {
+    if (this.playing) this.pause();
+    else if (this.chunks.length && this.i < this.chunks.length) { this.playing = true; this._speakCurrent(); }
+    else this.speak(text);
+  },
+  setRate(r) { this.rate = r; if (this.playing) { this.gen++; speechSynthesis.cancel(); this._speakCurrent(); } },
+  pause() { this.playing = false; this.gen++; speechSynthesis.cancel(); },
+  stop() { this.playing = false; this.gen++; this.chunks = []; this.i = 0; speechSynthesis.cancel(); }
 };
 if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
@@ -233,7 +250,7 @@ function renderLogin() {
       <div class="login-logo">🎓</div>
       <h1>Claude Academy</h1>
       <p>Học nhanh 7 khoá Claude của Anthropic — có âm thanh, minh hoạ, quiz và flashcard. Đăng nhập để app nhớ tiến độ của bạn.</p>
-      <div class="field"><label>Tên của bạn</label><input id="inName" placeholder="VD: Anh Hùng" autocomplete="name"></div>
+      <div class="field"><label>Tên của bạn</label><input id="inName" placeholder="VD: Lê Văn Thảo" autocomplete="name"></div>
       <div class="field"><label>Email</label><input id="inMail" type="email" placeholder="ten@gmail.com" autocomplete="email" inputmode="email"></div>
       <div class="login-err" id="loginErr"></div>
       <button class="btn btn-primary pressable" id="loginBtn">Bắt đầu học 🚀</button>
@@ -274,7 +291,7 @@ function renderHome() {
   app.innerHTML = `
   <div class="screen">
     <div class="greet pop">
-      <h1>Chào ${esc(firstName(user().name))} 👋</h1>
+      <h1>Chào ${esc(user().name)} 👋</h1>
       <p>${nx ? "Hôm nay học gì tiếp nhỉ?" : "Bạn đã hoàn thành tất cả bài học — quá đỉnh!"}</p>
     </div>
     <div class="progress-hero clay shimmer pop" style="--d:.05s">
@@ -386,8 +403,7 @@ function renderStreaks() {
   let week = "";
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const lit = daySet.has(key);
+    const lit = daySet.has(dayKey(d));
     week += `<div class="day-dot ${lit ? "lit" : ""}"><i>${lit ? "🔥" : "·"}</i>${labels[d.getDay()]}</div>`;
   }
   const fullCourses = COURSES.filter(c => courseProgress(c).pct === 100).length;
@@ -573,15 +589,11 @@ function renderLesson(cid, idx) {
   if (!supported) document.getElementById("adLabel").textContent = "Thiết bị không hỗ trợ đọc giọng nói";
   playBtn.onclick = () => {
     if (!supported) return;
-    if (TTS.playing) TTS.pause();
-    else if (speechSynthesis.paused && speechSynthesis.speaking) TTS.resume();
-    else { TTS.rate = +document.getElementById("rateSel").value; TTS.speak(lessonSpeechText(l)); }
+    TTS.rate = +document.getElementById("rateSel").value;
+    TTS.toggle(lessonSpeechText(l)); // đọc / tạm dừng / đọc tiếp từ đúng câu đang dở
     updateAudioDock();
   };
-  document.getElementById("rateSel").onchange = e => {
-    TTS.rate = +e.target.value;
-    if (speechSynthesis.speaking) { TTS.speak(lessonSpeechText(l)); updateAudioDock(); }
-  };
+  document.getElementById("rateSel").onchange = e => TTS.setRate(+e.target.value);
   const advance = () => { if (next) go(`#/lesson/${c.id}/${idx + 1}`); else go(`#/quiz/${c.id}`); };
   document.getElementById("doneBtn").onclick = () => {
     if (!P.done[l.id]) {
@@ -598,7 +610,8 @@ function updateAudioDock() {
   if (!b) return;
   b.textContent = TTS.playing ? "⏸" : "▶";
   b.classList.toggle("playing", TTS.playing);
-  if (lab) lab.textContent = TTS.playing ? "Đang đọc… chạm để tạm dừng" : "Nghe bài giảng — giọng tiếng Việt";
+  const paused = !TTS.playing && TTS.chunks.length && TTS.i < TTS.chunks.length;
+  if (lab) lab.textContent = TTS.playing ? "Đang đọc… chạm để tạm dừng" : paused ? "Đang tạm dừng — chạm để đọc tiếp" : "Nghe bài giảng — giọng tiếng Việt";
 }
 
 // ───────────────────────── Quiz ─────────────────────────
@@ -608,13 +621,15 @@ function renderQuiz(cid) {
   let i = 0, score = 0, answered = false;
   function draw() {
     const q = c.quiz[i];
+    // xáo trộn thứ tự đáp án mỗi lần hiển thị — tránh học thuộc vị trí thay vì kiến thức
+    const order = q.options.map((_, k) => k).sort(() => Math.random() - .5);
     app.innerHTML = `
     <div class="screen" style="--cc:${c.color}">
       ${backRow(`#/course/${c.id}`, `Quiz · ${esc(c.title)}`)}
       <div class="cc-bar pop"><div class="track"><i style="width:${Math.round(i / c.quiz.length * 100)}%"></i></div><small>câu ${i + 1}/${c.quiz.length}</small></div>
       <p class="quiz-q pop" style="--d:.04s">${esc(q.q)}</p>
       <div class="opt-stack">
-        ${q.options.map((o, k) => `<button class="opt-btn clay pressable pop" style="--d:${.07 + k * .05}s" data-k="${k}">${esc(o)}</button>`).join("")}
+        ${order.map((o, k) => `<button class="opt-btn clay pressable pop" style="--d:${.07 + k * .05}s" data-k="${o}">${esc(q.options[o])}</button>`).join("")}
       </div>
       <div id="explBox"></div>
     </div>`;
@@ -625,7 +640,8 @@ function renderQuiz(cid) {
         const k = +btn.dataset.k;
         const ok = k === q.a;
         if (ok) { score++; sfx("correct"); } else sfx("wrong");
-        app.querySelectorAll(".opt-btn").forEach((b, j) => {
+        app.querySelectorAll(".opt-btn").forEach(b => {
+          const j = +b.dataset.k;
           if (j === q.a) b.classList.add("right");
           else if (j === k) b.classList.add("wrong");
           b.disabled = true;
@@ -686,19 +702,22 @@ function renderCards(cid) {
           <div class="fc-face back"><small>TRẢ LỜI</small><p>${esc(card.back)}</p></div>
         </div>
       </div>
+      <button class="btn btn-ghost pressable" style="margin-top:14px" id="againBtn">🔁 Chưa thuộc — cho ôn lại ở cuối bộ</button>
       <div class="fc-nav">
         <button class="btn pressable" style="padding:13px" id="speakBtn">🔊</button>
         <button class="btn pressable" id="prevBtn" ${i === 0 ? "disabled" : ""}>← Trước</button>
         <button class="btn btn-primary pressable" id="nextBtn">${i + 1 < cards.length ? "Thẻ sau →" : "Hoàn tất ✓"}</button>
       </div>
     </div>`;
-    document.getElementById("fc").onclick = () => { flipped = !flipped; document.getElementById("fc").classList.toggle("flipped"); };
-    document.getElementById("speakBtn").onclick = () => TTS.speak(flipped ? card.back : card.front);
-    document.getElementById("prevBtn").onclick = () => { if (i > 0) { i--; flipped = false; draw(); } };
-    document.getElementById("nextBtn").onclick = () => {
+    const advance = () => {
       if (i + 1 < cards.length) { i++; flipped = false; draw(); }
       else { markStudyDay(); saveP(); sfx("done"); confetti(); setTimeout(() => go(`#/course/${c.id}`), 650); }
     };
+    document.getElementById("fc").onclick = () => { flipped = !flipped; document.getElementById("fc").classList.toggle("flipped"); };
+    document.getElementById("speakBtn").onclick = () => TTS.speak(flipped ? card.back : card.front);
+    document.getElementById("prevBtn").onclick = () => { if (i > 0) { i--; flipped = false; draw(); } };
+    document.getElementById("againBtn").onclick = () => { cards.push(card); advance(); };
+    document.getElementById("nextBtn").onclick = advance;
   }
   draw();
 }
