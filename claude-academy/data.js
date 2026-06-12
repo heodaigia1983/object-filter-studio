@@ -917,3 +917,84 @@ const COURSES = [
   ]
 }
 ];
+
+// ════════════════ BỔ SUNG: hình minh hoạ thứ 2, câu hỏi luyện thi, link thi chứng chỉ ════════════════
+const COURSE_EXTRAS = {
+  "claude-101": {
+    examUrl: "https://anthropic.skilljar.com/claude-101",
+    art2: { "c101-1": "voice", "c101-2": "checklist", "c101-3": "artifact", "c101-4": "research", "c101-5": "iterate" },
+    quiz: [
+      { q: "Claude có thể nhớ thông tin giữa các cuộc trò chuyện khác nhau khi nào?", options: ["Luôn luôn tự nhớ", "Khi dùng Projects hoặc bật tính năng memory", "Không bao giờ", "Chỉ khi trả phí"], a: 1, expl: "Mặc định mỗi chat độc lập; Projects và memory giúp giữ ngữ cảnh lâu dài." },
+      { q: "Để Claude phân tích một file Excel, cách đúng là gì?", options: ["Mô tả nội dung file bằng lời", "Đính kèm file trực tiếp vào ô chat", "Chụp ảnh từng ô", "Không thể làm được"], a: 1, expl: "Claude đọc trực tiếp PDF, Word, Excel, CSV, ảnh... khi được đính kèm." },
+      { q: "Custom instructions trong một Project có tác dụng gì?", options: ["Đổi màu giao diện", "Quy định cách Claude trả lời trong MỌI chat của project đó", "Tăng tốc độ", "Chặn người khác xem"], a: 1, expl: "Đặt một lần, áp dụng cho mọi cuộc trò chuyện trong project." },
+      { q: "Phát biểu nào đúng về voice mode?", options: ["Chỉ có trên máy tính", "Trò chuyện bằng giọng nói với Claude trên app di động", "Phải trả thêm phí riêng", "Chỉ hỗ trợ tiếng Anh viết"], a: 1, expl: "App Android/iOS hỗ trợ trò chuyện bằng giọng nói." }
+    ]
+  },
+  "ai-fluency": {
+    examUrl: "https://anthropic.skilljar.com/",
+    art2: { "af-1": "loop-human", "af-2": "checklist", "af-3": "iterate", "af-4": "risk" },
+    quiz: [
+      { q: "Brainstorm ý tưởng cùng AI thuộc chế độ cộng tác nào?", options: ["Automation", "Augmentation", "Delegation", "Isolation"], a: 1, expl: "Augmentation = AI và bạn cùng tư duy; Automation = AI làm thay một việc cụ thể." },
+      { q: "«Platform awareness» trong Delegation nghĩa là gì?", options: ["Biết giá các gói cước", "Hiểu công cụ AI đang dùng mạnh gì, yếu gì, truy cập được dữ liệu nào", "Biết dùng nhiều nền tảng mạng xã hội", "Thuộc tên các mô hình"], a: 1, expl: "Hiểu năng lực và giới hạn của công cụ trước khi giao việc." },
+      { q: "Thẩm định «quy trình» (process discernment) là kiểm tra điều gì?", options: ["Kết quả cuối có đẹp không", "AI có hiểu sai đề/bịa nguồn ở bước nào trong cách nó suy luận không", "Tốc độ phản hồi", "Chi phí"], a: 1, expl: "Không chỉ soi sản phẩm mà soi cả cách AI đi đến kết quả." },
+      { q: "Khi nào cần minh bạch việc dùng AI?", options: ["Không bao giờ", "Khi điều đó quan trọng với người nhận sản phẩm", "Chỉ khi bị hỏi", "Luôn phải ghi vào mọi tin nhắn"], a: 1, expl: "Diligence: cho người liên quan biết khi AI tham gia, khi điều đó quan trọng với họ." }
+    ]
+  },
+  "prompt-eng": {
+    examUrl: "https://anthropic.skilljar.com/",
+    art2: { "pe-1": "chat", "pe-2": "chain", "pe-3": "cot", "pe-4": "structure", "pe-5": "inspector" },
+    quiz: [
+      { q: "Prompt chaining là gì?", options: ["Lặp lại một prompt nhiều lần", "Chia nhiệm vụ lớn thành chuỗi prompt nhỏ, đầu ra bước trước làm đầu vào bước sau", "Nối nhiều mô hình", "Viết prompt dài nhất có thể"], a: 1, expl: "Mỗi bước tập trung một việc → chất lượng cao hơn một prompt khổng lồ." },
+      { q: "Ví dụ trong prompt nên được bọc trong thẻ nào?", options: ["<data>", "<examples>", "<test>", "<sample-output>"], a: 1, expl: "Bọc trong <examples> (hoặc <example>) để Claude không nhầm ví dụ với dữ liệu thật." },
+      { q: "Vì sao nên cho Claude «đường lui» kiểu «nếu không chắc, hãy nói không biết»?", options: ["Cho lịch sự", "Giảm rõ rệt việc bịa thông tin (hallucination)", "Tăng độ dài câu trả lời", "Bắt buộc của API"], a: 1, expl: "Không có đường lui, mô hình có xu hướng đoán; có đường lui, nó thừa nhận giới hạn." },
+      { q: "Công cụ nào của Anthropic giúp tự động cải thiện prompt?", options: ["Prompt improver trong Console", "Photoshop", "Google Translate", "Task Manager"], a: 0, expl: "Anthropic Console có prompt improver và generator." }
+    ]
+  },
+  "claude-code": {
+    examUrl: "https://anthropic.skilljar.com/claude-code-101",
+    art2: { "cc-1": "plan-mode", "cc-2": "iterate", "cc-3": "compact", "cc-4": "share", "cc-5": "connect" },
+    quiz: [
+      { q: "Lệnh /init trong Claude Code làm gì?", options: ["Xoá dự án", "Khảo sát dự án và tạo file CLAUDE.md đầu tiên", "Cài đặt lại app", "Tạo git repo"], a: 1, expl: "/init giúp Claude tự khám phá codebase và sinh CLAUDE.md." },
+      { q: "Phím Esc trong Claude Code dùng để làm gì?", options: ["Thoát hẳn chương trình", "Ngắt Claude đang làm để chỉnh hướng ngay", "Xoá CLAUDE.md", "Đổi mô hình"], a: 1, expl: "Esc dừng hành động hiện tại để bạn điều chỉnh — đừng đợi nó làm sai xong mới sửa." },
+      { q: "Gõ «#» trước một ghi chú trong phiên làm việc có tác dụng gì?", options: ["Tạo hashtag", "Lưu ghi chú đó vào CLAUDE.md làm ghi nhớ lâu dài", "Comment code", "Tìm kiếm"], a: 1, expl: "# là cách thêm ghi nhớ nhanh vào bộ nhớ dự án." },
+      { q: "Tag @claude trong issue/PR trên GitHub có tác dụng gì (khi đã cài GitHub Actions của Claude)?", options: ["Không gì cả", "Claude tự đọc issue/PR và thực hiện việc được yêu cầu", "Gửi email cho Anthropic", "Khoá issue"], a: 1, expl: "GitHub Actions của Claude cho phép giao việc ngay trong issue/PR." }
+    ]
+  },
+  "claude-api": {
+    examUrl: "https://anthropic.skilljar.com/claude-platform-101",
+    art2: { "api-1": "terminal", "api-2": "tokens", "api-3": "chat", "api-4": "workflow", "api-5": "tokens" },
+    quiz: [
+      { q: "Header bắt buộc để xác thực với Claude API là gì?", options: ["Authorization: Bearer", "x-api-key", "api-token", "claude-key"], a: 1, expl: "REST API dùng header x-api-key (kèm anthropic-version)." },
+      { q: "stop_reason «tool_use» trong response nghĩa là gì?", options: ["Có lỗi xảy ra", "Claude muốn gọi một tool và đang chờ kết quả từ code của bạn", "Hết token", "Hoàn thành câu trả lời"], a: 1, expl: "Bạn cần thực thi hàm tương ứng rồi gửi tool_result lại." },
+      { q: "Vì sao KHÔNG được gọi Claude API trực tiếp từ frontend?", options: ["Vì chậm", "Vì API key sẽ bị lộ cho mọi người dùng", "Vì không hỗ trợ JavaScript", "Vì tốn pin"], a: 1, expl: "Key trong frontend = ai cũng lấy được. Luôn gọi qua backend của bạn." },
+      { q: "Phần nào của request NÊN đặt cache_control để hưởng prompt caching?", options: ["Câu hỏi mới nhất của user", "Phần đầu lặp lại: system prompt dài, tài liệu lớn, danh sách tools", "max_tokens", "Câu trả lời"], a: 1, expl: "Cache phần ổn định ở đầu; phần thay đổi (câu hỏi mới) đặt sau." }
+    ]
+  },
+  "mcp": {
+    examUrl: "https://anthropic.skilljar.com/",
+    art2: { "mcp-1": "connect", "mcp-2": "tooluse", "mcp-3": "inspector", "mcp-4": "risk" },
+    quiz: [
+      { q: "Giao thức truyền tải nào dùng khi MCP server chạy CÙNG MÁY với host?", options: ["HTTP", "stdio (luồng vào/ra chuẩn)", "FTP", "Bluetooth"], a: 1, expl: "stdio cho server cục bộ; HTTP cho server từ xa." },
+      { q: "Resource trong MCP có đặc điểm gì?", options: ["Gây tác dụng phụ lên hệ thống", "Dữ liệu chỉ-đọc có URI riêng, không gây tác dụng phụ", "Chỉ chứa code", "Do mô hình tự tạo ra"], a: 1, expl: "Resources chỉ cung cấp thông tin (file, bản ghi...) — không thực hiện hành động." },
+      { q: "Trong FastMCP, docstring của hàm Python trở thành gì?", options: ["Tên server", "Mô tả của tool (phần mô hình đọc để quyết định gọi)", "API key", "Log"], a: 1, expl: "Docstring → description; type hints → schema tham số." },
+      { q: "Prompt injection trong bối cảnh MCP là rủi ro gì?", options: ["Server chạy chậm", "Dữ liệu độc hại từ bên ngoài chứa lệnh đánh lừa mô hình thực hiện hành động xấu", "Mất kết nối mạng", "Token hết hạn"], a: 1, expl: "Vì vậy cần duyệt kỹ các hành động ghi/xoá và chỉ cài server tin cậy." }
+    ]
+  },
+  "agent-skills": {
+    examUrl: "https://anthropic.skilljar.com/",
+    art2: { "as-1": "tools", "as-2": "claudemd", "as-3": "iterate", "as-4": "cert" },
+    quiz: [
+      { q: "Vì sao thân skill nên NGẮN GỌN?", options: ["Để đẹp", "Mỗi token trong skill chiếm chỗ của ngữ cảnh dành cho nhiệm vụ", "Vì giới hạn 100 từ", "Để dịch dễ hơn"], a: 1, expl: "Context window có hạn — skill dài chèn ép ngữ cảnh làm việc." },
+      { q: "Khi quy tắc khó diễn đạt bằng lời, kỹ thuật tốt nhất trong skill là gì?", options: ["Viết dài hơn", "Cho ví dụ TỐT và ví dụ XẤU đối chiếu", "Bỏ qua quy tắc đó", "Viết bằng tiếng Anh"], a: 1, expl: "Cặp ví dụ tốt/xấu truyền đạt sắc thái hiệu quả nhất." },
+      { q: "Anthropic phát hành sẵn các skill chính thức nào?", options: ["Chơi game", "Tạo Excel, PowerPoint, PDF, Word", "Chỉnh sửa video", "Đặt vé máy bay"], a: 1, expl: "Bộ skill tài liệu văn phòng chính thức dùng được ngay." },
+      { q: "Ứng viên tốt nhất cho skill ĐẦU TIÊN của bạn là gì?", options: ["Việc làm một lần duy nhất", "Một quy trình bạn lặp lại hằng tuần", "Việc chưa bao giờ làm", "Việc tuyệt mật"], a: 1, expl: "Quy trình lặp lại = đóng gói một lần, hưởng lợi mãi." }
+    ]
+  }
+};
+for (const c of COURSES) {
+  const e = COURSE_EXTRAS[c.id];
+  if (!e) continue;
+  c.examUrl = e.examUrl;
+  c.quiz.push(...e.quiz);
+  c.lessons.forEach(l => { if (e.art2[l.id]) l.art2 = e.art2[l.id]; });
+}
