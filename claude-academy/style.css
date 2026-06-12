@@ -105,6 +105,14 @@ html.dark .shimmer::after { background: linear-gradient(115deg, transparent 30%,
 .appbar-name { flex: 1; min-width: 0; line-height: 1.25; }
 .appbar-name small { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
 .appbar-name b { font-size: 14.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.music-btn {
+  width: 38px; height: 38px; border: none; border-radius: 14px; flex-shrink: 0;
+  background: var(--surface-2); font-size: 17px; cursor: pointer;
+  box-shadow: inset 0 2px 4px rgba(42, 36, 64, .1);
+  transition: transform .15s var(--bounce), opacity .2s;
+}
+.music-btn:active { transform: scale(.9); }
+.music-btn.off { opacity: .35; filter: grayscale(1); }
 .streak-chip {
   display: flex; align-items: center; gap: 5px;
   background: linear-gradient(135deg, #ff9a3d, #ff5e62); color: #fff;
