@@ -22,6 +22,7 @@ function loadUserProgress() {
   P.done = P.done || {};   // lessonId -> true
   P.quiz = P.quiz || {};   // courseId -> điểm % tốt nhất
   P.days = P.days || [];   // các ngày có học (yyyy-mm-dd)
+  P.wrong = P.wrong || {}; // courseId -> [chỉ số câu từng trả lời sai] (cho Ôn tập thông minh)
   saveP();
 }
 function saveP() { if (CURRENT) saveJSON(progressKey(CURRENT), P); }
@@ -73,6 +74,18 @@ function totals() {
     quizDone: quizzes.length,
     quizAvg: quizzes.length ? Math.round(quizzes.reduce((a, b) => a + b, 0) / quizzes.length) : 0
   };
+}
+// Ôn tập thông minh: ghi/xoá câu từng sai; trả lời đúng là thoát khỏi danh sách
+function trackAnswer(cid, qi, ok) {
+  const wl = P.wrong[cid] = P.wrong[cid] || [];
+  if (ok) { const ix = wl.indexOf(qi); if (ix >= 0) wl.splice(ix, 1); }
+  else if (!wl.includes(qi)) wl.push(qi);
+  saveP();
+}
+function reviewItems() {
+  const items = [];
+  for (const c of COURSES) (P.wrong[c.id] || []).forEach(qi => { if (c.quiz[qi]) items.push({ c, qi }); });
+  return items;
 }
 function nextLesson() {
   for (const c of COURSES) {
@@ -421,6 +434,17 @@ function renderHome() {
         <div class="cc-tag">${esc(nx.c.title)}</div>
         <h3>${esc(nx.c.lessons[nx.i].title)}</h3>
         <p>Bài ${nx.i + 1}/${nx.c.lessons.length} · ${esc(nx.c.lessons[nx.i].time)} · nghe được 🔊</p>
+      </div>
+      <span class="lr-go">›</span>
+    </a>` : ""}
+    ${reviewItems().length ? `
+    <h2 class="sec-title pop" style="--d:.13s">Ôn tập thông minh <small>cá nhân hoá</small></h2>
+    <a class="course-card clay shimmer pressable pop" style="--cc:#f5841f;--d:.14s" href="#/review">
+      <div class="cc-icon">🧠</div>
+      <div class="cc-main">
+        <div class="cc-tag">Luyện điểm yếu</div>
+        <h3>${reviewItems().length} câu bạn từng trả lời sai</h3>
+        <p>Trả lời đúng là câu đó thoát khỏi danh sách — xoá sạch điểm yếu trước khi thi.</p>
       </div>
       <span class="lr-go">›</span>
     </a>` : ""}
@@ -773,6 +797,7 @@ function renderQuiz(cid) {
         if (answered) return; answered = true;
         const k = +btn.dataset.k;
         const ok = k === q.a;
+        trackAnswer(c.id, i, ok);
         if (ok) { score++; sfx("correct"); } else sfx("wrong");
         app.querySelectorAll(".opt-btn").forEach(b => {
           const j = +b.dataset.k;
@@ -814,6 +839,86 @@ function renderQuiz(cid) {
     </div>`;
     document.getElementById("retryBtn").onclick = () => { i = 0; score = 0; draw(); };
     document.getElementById("cardsBtn").onclick = () => go(`#/cards/${c.id}`);
+  }
+  draw();
+}
+
+// ───────────────────────── Ôn tập thông minh (câu từng sai) ─────────────────────────
+function renderReview() {
+  TTS.stop(); renderChrome("home");
+  const items = reviewItems().sort(() => Math.random() - .5);
+  if (!items.length) {
+    app.innerHTML = `
+    <div class="screen">
+      ${backRow("#/", "Trang chủ")}
+      <div class="result-hero clay shimmer pop">
+        <span class="big-emoji">🏆</span>
+        <h1>Không còn câu nào sai!</h1>
+        <p>Bạn đã xoá sạch điểm yếu. Làm thêm quiz các khoá để tiếp tục luyện, hoặc đi thi chứng chỉ thôi!</p>
+      </div>
+      <div class="action-stack" style="margin-top:14px">
+        <a class="btn btn-primary pressable" href="#/">Về trang chủ</a>
+        <a class="btn pressable" href="#/explore">🎓 Trang thi chứng chỉ</a>
+      </div>
+    </div>`;
+    return;
+  }
+  let i = 0, score = 0, answered = false;
+  function draw() {
+    const { c, qi } = items[i];
+    const q = c.quiz[qi];
+    const order = q.options.map((_, k) => k).sort(() => Math.random() - .5);
+    app.innerHTML = `
+    <div class="screen" style="--cc:${c.color}">
+      ${backRow("#/", "Ôn tập thông minh")}
+      <div class="cc-bar pop"><div class="track"><i style="width:${Math.round(i / items.length * 100)}%"></i></div><small>câu ${i + 1}/${items.length}</small></div>
+      <div class="hero-meta pop" style="justify-content:flex-start;margin-top:10px"><span class="chip vio">${c.emoji} ${esc(c.title)}</span></div>
+      <p class="quiz-q pop" style="--d:.04s">${esc(q.q)}</p>
+      <div class="opt-stack">
+        ${order.map((o, k) => `<button class="opt-btn clay pressable pop" style="--d:${.07 + k * .05}s" data-k="${o}">${esc(q.options[o])}</button>`).join("")}
+      </div>
+      <div id="explBox"></div>
+    </div>`;
+    answered = false;
+    app.querySelectorAll(".opt-btn").forEach(btn => {
+      btn.onclick = () => {
+        if (answered) return; answered = true;
+        const k = +btn.dataset.k;
+        const ok = k === q.a;
+        trackAnswer(c.id, qi, ok); // đúng → câu này thoát khỏi danh sách ôn
+        if (ok) { score++; sfx("correct"); } else sfx("wrong");
+        app.querySelectorAll(".opt-btn").forEach(b => {
+          const j = +b.dataset.k;
+          if (j === q.a) b.classList.add("right");
+          else if (j === k) b.classList.add("wrong");
+          b.disabled = true;
+        });
+        document.getElementById("explBox").innerHTML = `
+          <div class="expl-card clay pop"><b>${ok ? "✅ Chính xác — câu này rời khỏi danh sách ôn!" : "❌ Chưa đúng — câu này sẽ quay lại lần sau."}</b> ${esc(q.expl)}</div>
+          <button class="btn btn-primary pressable pop" id="nextQ">${i + 1 < items.length ? "Câu tiếp theo →" : "Xem kết quả 🎉"}</button>`;
+        document.getElementById("nextQ").onclick = () => { i++; i < items.length ? draw() : finish(); };
+      };
+    });
+  }
+  function finish() {
+    markStudyDay(); saveP(); sfx("done");
+    const left = reviewItems().length;
+    if (!left) confetti();
+    app.innerHTML = `
+    <div class="screen">
+      ${backRow("#/", "Trang chủ")}
+      <div class="result-hero clay shimmer pop">
+        <span class="big-emoji">${left ? "💪" : "🏆"}</span>
+        <h1>Đúng ${score}/${items.length} câu</h1>
+        <p>${left ? `Còn ${left} câu cần luyện tiếp — mỗi vòng sẽ ngắn dần cho đến khi sạch điểm yếu.` : "Sạch điểm yếu! Bạn đã sẵn sàng cho kỳ thi chứng chỉ. 🎉"}</p>
+      </div>
+      <div class="action-stack" style="margin-top:14px">
+        ${left ? `<button class="btn btn-primary pressable" id="againBtn">Luyện vòng nữa (${left} câu)</button>` : `<a class="btn btn-primary pressable" href="#/explore">🎓 Đến trang thi chứng chỉ</a>`}
+        <a class="btn pressable" href="#/">Về trang chủ</a>
+      </div>
+    </div>`;
+    const ab = document.getElementById("againBtn");
+    if (ab) ab.onclick = () => renderReview();
   }
   draw();
 }
@@ -871,6 +976,7 @@ function route() {
   else if (page === "lesson" && a != null && b != null) renderLesson(a, b);
   else if (page === "quiz" && a) renderQuiz(a);
   else if (page === "cards" && a) renderCards(a);
+  else if (page === "review") renderReview();
   else if (page === "explore") renderExplore();
   else if (page === "streaks") renderStreaks();
   else if (page === "profile") renderProfile();
