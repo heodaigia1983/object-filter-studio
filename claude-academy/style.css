@@ -33,6 +33,7 @@ html.dark {
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -40,6 +41,12 @@ body {
   color: var(--ink);
   line-height: 1.6;
   min-height: 100dvh;
+}
+/* lớp mờ chuyển tiếp để nội dung không lộ lem nhem sau thanh điều hướng dưới */
+body::after {
+  content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 92px;
+  background: linear-gradient(to top, var(--bg) 18%, transparent);
+  pointer-events: none; z-index: 40;
 }
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -107,7 +114,7 @@ html.dark .shimmer::after { background: linear-gradient(115deg, transparent 30%,
 
 /* ═══ Bottom Navigation ═══ */
 .bottomnav {
-  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 50;
+  position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); z-index: 50;
   width: min(440px, calc(100% - 28px));
   background: color-mix(in srgb, var(--surface) 85%, transparent);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
