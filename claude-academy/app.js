@@ -98,10 +98,48 @@ const TTS = {
 };
 if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
+// ── Phản hồi xúc giác (rung) + âm thanh chạm — bật/tắt được trong Hồ sơ ──
+const FX = {
+  sound: loadJSON("ca-fx-sound", true),
+  haptic: loadJSON("ca-fx-haptic", true)
+};
+function setFX(key, val) { FX[key] = val; saveJSON("ca-fx-" + key, val); }
+function vibrate(pattern) {
+  if (!FX.haptic || !navigator.vibrate) return;
+  try { navigator.vibrate(pattern); } catch { /* thiết bị không hỗ trợ */ }
+}
+
 let audioCtx = null;
-function sfx(kind) {
+function ctxReady() {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+// Tiếng "tách" nhẹ khi chạm nút / chuyển tab
+function tap(kind) {
+  if (!FX.sound) return;
   try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = ctxReady();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "triangle";
+    const t = ctx.currentTime;
+    if (kind === "nav") { o.frequency.setValueAtTime(540, t); o.frequency.exponentialRampToValueAtTime(880, t + .07); }
+    else { o.frequency.setValueAtTime(950, t); o.frequency.exponentialRampToValueAtTime(620, t + .05); }
+    g.gain.setValueAtTime(.07, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + (kind === "nav" ? .09 : .06));
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + .1);
+  } catch { /* không có audio cũng không sao */ }
+}
+
+function sfx(kind) {
+  // rung theo từng loại sự kiện
+  if (kind === "correct") vibrate(25);
+  else if (kind === "wrong") vibrate([45, 60, 45]);
+  else if (kind === "done") vibrate([15, 40, 15, 40, 40]);
+  if (!FX.sound) return;
+  try {
+    ctxReady();
     const notes = kind === "correct" ? [[523, 0], [659, .09], [784, .18]]
                 : kind === "wrong"   ? [[220, 0], [185, .12]]
                 : kind === "done"    ? [[523, 0], [659, .1], [784, .2], [1047, .3]]
@@ -410,7 +448,12 @@ function renderProfile() {
         </div>`;
       }).join("")}
     </div>
-    <div class="action-stack" style="margin-top:20px">
+    <h2 class="sec-title pop">Cài đặt trải nghiệm</h2>
+    <div class="action-stack">
+      <button class="btn pressable" id="soundTg">${FX.sound ? "🔊 Âm thanh chạm: BẬT" : "🔇 Âm thanh chạm: TẮT"}</button>
+      <button class="btn pressable" id="hapticTg">${FX.haptic ? "📳 Rung phản hồi: BẬT" : "📴 Rung phản hồi: TẮT"}</button>
+    </div>
+    <div class="action-stack" style="margin-top:12px">
       <button class="btn pressable" id="themeBtn">🌓 Đổi giao diện sáng/tối</button>
       <button class="btn btn-ghost pressable" id="logoutBtn">Đăng xuất</button>
     </div>
@@ -425,6 +468,16 @@ function renderProfile() {
     </div>
     <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>
   </div>`;
+  document.getElementById("soundTg").onclick = () => {
+    setFX("sound", !FX.sound);
+    if (FX.sound) tap("nav"); // nghe thử ngay khi bật
+    renderProfile();
+  };
+  document.getElementById("hapticTg").onclick = () => {
+    setFX("haptic", !FX.haptic);
+    if (FX.haptic) vibrate([15, 40, 15]); // rung thử ngay khi bật
+    renderProfile();
+  };
   document.getElementById("themeBtn").onclick = () => {
     const dark = document.documentElement.classList.toggle("dark");
     localStorage.setItem("ca-theme", dark ? "dark" : "light");
@@ -671,6 +724,16 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 route();
+
+// ───────────────────────── Phản hồi chạm toàn cục ─────────────────────────
+// Mọi nút, link, menu khi chạm đều rung nhẹ + tiếng "tách" tức thì.
+document.addEventListener("pointerdown", e => {
+  const el = e.target.closest("button, a, select, .pressable, .fc-stage");
+  if (!el || el.disabled) return;
+  const isNav = el.classList.contains("nav-item");
+  vibrate(isNav ? 12 : 8);
+  tap(isNav ? "nav" : "tap");
+}, { passive: true });
 
 // ───────────────────────── PWA: service worker ─────────────────────────
 if ("serviceWorker" in navigator && location.protocol === "https:") {
