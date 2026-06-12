@@ -34,6 +34,12 @@
 
 > Lưu ý: app này giúp học nhanh nội dung; để nhận **chứng chỉ chính thức** của Anthropic, hãy hoàn thành khoá tương ứng tại anthropic.skilljar.com.
 
+## Bản quyền
+
+**© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.** — Liên hệ: heodaigia1983@gmail.com
+
+Xem chi tiết tại file [LICENSE](../LICENSE). Nội dung học tập được biên soạn lại bằng tiếng Việt theo đề cương các khoá học công khai của Anthropic Academy. Claude và Anthropic là thương hiệu của Anthropic PBC.
+
 ## Kỹ thuật
 
 HTML/CSS/JS thuần, không cần build, không backend. Tiến độ lưu bằng `localStorage`. Âm thanh: Web Speech API (TTS) + WebAudio (hiệu ứng). Offline: service worker cache-first.

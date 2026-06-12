@@ -135,6 +135,10 @@ function confetti() {
   setTimeout(() => box.remove(), 1100);
 }
 
+// ───────────────────────── Bản quyền ─────────────────────────
+const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
+const CONTACT = "heodaigia1983@gmail.com";
+
 // ───────────────────────── Tiện ích ─────────────────────────
 const app = document.getElementById("app");
 const appbar = document.getElementById("appbar");
@@ -203,6 +207,7 @@ function renderLogin() {
             <span style="text-align:left">${esc(info.name)}<br><small>${esc(em)}</small></span>
           </button>`).join("")}
       </div>` : ""}
+      <p class="foot-note" style="padding-top:16px">${COPYRIGHT}<br>Liên hệ: <a href="mailto:${CONTACT}" style="color:var(--violet);font-weight:700">${CONTACT}</a></p>
     </div>
   </div>`;
   const err = document.getElementById("loginErr");
@@ -278,7 +283,7 @@ function renderHome() {
         </a>`;
       }).join("")}
     </div>
-    <p class="foot-note">Hoàn thành khoá tương ứng tại anthropic.skilljar.com để nhận chứng chỉ chính thức 🎓</p>
+    <p class="foot-note">Hoàn thành khoá tương ứng tại anthropic.skilljar.com để nhận chứng chỉ chính thức 🎓<br>${COPYRIGHT}</p>
   </div>`;
 }
 
@@ -407,6 +412,14 @@ function renderProfile() {
     <div class="action-stack" style="margin-top:20px">
       <button class="btn pressable" id="themeBtn">🌓 Đổi giao diện sáng/tối</button>
       <button class="btn btn-ghost pressable" id="logoutBtn">Đăng xuất</button>
+    </div>
+    <h2 class="sec-title pop">Về ứng dụng</h2>
+    <div class="info-card clay shimmer pop">
+      <h3>🎓 Claude Academy</h3>
+      <p>Ứng dụng học nhanh các khoá Claude của Anthropic Academy bằng tiếng Việt.</p>
+      <p style="margin-top:8px"><b>${COPYRIGHT}</b></p>
+      <p>Liên hệ tác giả: <a href="mailto:${CONTACT}" style="color:var(--violet);font-weight:700">${CONTACT}</a></p>
+      <p style="margin-top:8px">Nội dung biên soạn theo đề cương khoá học công khai của Anthropic Academy. Claude và Anthropic là thương hiệu của Anthropic PBC.</p>
     </div>
     <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>
   </div>`;
