@@ -1,22 +1,52 @@
-// Claude Academy VN — logic ứng dụng
+// Claude Academy — logic ứng dụng (Claymorphism UI)
 
 (() => {
 "use strict";
 
-// ───────────────────────── Tiến độ (localStorage) ─────────────────────────
-const STORE_KEY = "ca-progress-v1";
-function loadProgress() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
-}
-function saveProgress(p) { localStorage.setItem(STORE_KEY, JSON.stringify(p)); }
-let P = loadProgress();
-P.done = P.done || {};        // lessonId -> true
-P.quiz = P.quiz || {};        // courseId -> best score %
-P.days = P.days || [];        // các ngày có học (yyyy-mm-dd)
+// ───────────────────────── Người dùng (đăng nhập nhớ email) ─────────────────────────
+function loadJSON(k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } }
+function saveJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
+let USERS = loadJSON("ca-users", {});            // email -> { name, created }
+let CURRENT = localStorage.getItem("ca-current"); // email đang đăng nhập
+
+function progressKey(email) { return "ca-progress:" + email; }
+let P = null;
+function loadUserProgress() {
+  P = loadJSON(progressKey(CURRENT), null);
+  if (!P) {
+    // chuyển tiến độ phiên bản cũ (trước khi có đăng nhập) sang tài khoản đầu tiên
+    P = loadJSON("ca-progress-v1", null) || {};
+    localStorage.removeItem("ca-progress-v1");
+  }
+  P.done = P.done || {};   // lessonId -> true
+  P.quiz = P.quiz || {};   // courseId -> điểm % tốt nhất
+  P.days = P.days || [];   // các ngày có học (yyyy-mm-dd)
+  saveP();
+}
+function saveP() { if (CURRENT) saveJSON(progressKey(CURRENT), P); }
+
+function login(name, email) {
+  email = email.trim().toLowerCase();
+  USERS[email] = { name: name.trim(), created: USERS[email]?.created || Date.now() };
+  saveJSON("ca-users", USERS);
+  CURRENT = email;
+  localStorage.setItem("ca-current", email);
+  loadUserProgress();
+}
+function logout() {
+  saveP();
+  CURRENT = null;
+  localStorage.removeItem("ca-current");
+  P = null;
+}
+function user() { return CURRENT ? { email: CURRENT, ...USERS[CURRENT] } : null; }
+function firstName(n) { const p = (n || "").trim().split(/\s+/); return p[p.length - 1] || "bạn"; }
+
+// ───────────────────────── Tiến độ & streak ─────────────────────────
 function markStudyDay() {
   const d = new Date().toISOString().slice(0, 10);
-  if (!P.days.includes(d)) { P.days.push(d); }
+  if (!P.days.includes(d)) P.days.push(d);
 }
 function streak() {
   const set = new Set(P.days);
@@ -30,31 +60,44 @@ function courseProgress(c) {
   const done = c.lessons.filter(l => P.done[l.id]).length;
   return { done, total, pct: Math.round(done / total * 100) };
 }
+function totals() {
+  const totalLessons = COURSES.reduce((n, c) => n + c.lessons.length, 0);
+  const doneLessons = Object.keys(P.done).length;
+  const quizzes = Object.values(P.quiz);
+  return {
+    totalLessons, doneLessons,
+    pct: Math.round(doneLessons / totalLessons * 100),
+    quizDone: quizzes.length,
+    quizAvg: quizzes.length ? Math.round(quizzes.reduce((a, b) => a + b, 0) / quizzes.length) : 0
+  };
+}
+function nextLesson() {
+  for (const c of COURSES) {
+    const i = c.lessons.findIndex(l => !P.done[l.id]);
+    if (i >= 0) return { c, i };
+  }
+  return null;
+}
 
-// ───────────────────────── Âm thanh: đọc bài (TTS) + hiệu ứng ─────────────────────────
+// ───────────────────────── Âm thanh: TTS + hiệu ứng + confetti ─────────────────────────
 const TTS = {
-  utter: null, playing: false, rate: 1,
-  viVoice() {
-    const vs = speechSynthesis.getVoices();
-    return vs.find(v => v.lang && v.lang.toLowerCase().startsWith("vi")) || null;
-  },
-  speak(text, onend) {
+  playing: false, rate: 1,
+  viVoice() { return speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("vi")) || null; },
+  speak(text) {
     this.stop();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "vi-VN"; u.rate = this.rate;
     const v = this.viVoice(); if (v) u.voice = v;
-    u.onend = () => { this.playing = false; updateAudioBar(); if (onend) onend(); };
-    u.onerror = () => { this.playing = false; updateAudioBar(); };
-    this.utter = u; this.playing = true;
+    u.onend = u.onerror = () => { this.playing = false; updateAudioDock(); };
+    this.playing = true;
     speechSynthesis.speak(u);
   },
   pause() { speechSynthesis.pause(); this.playing = false; },
   resume() { speechSynthesis.resume(); this.playing = true; },
   stop() { speechSynthesis.cancel(); this.playing = false; }
 };
-if ("speechSynthesis" in window) speechSynthesis.getVoices(); // nạp danh sách giọng sớm
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
-// Hiệu ứng âm thanh ngắn (WebAudio — không cần file)
 let audioCtx = null;
 function sfx(kind) {
   try {
@@ -74,10 +117,30 @@ function sfx(kind) {
   } catch { /* không có audio cũng không sao */ }
 }
 
+function confetti() {
+  const colors = ["#7c3aed", "#f06595", "#34c98e", "#f5a623", "#4dabf7"];
+  const box = document.createElement("div");
+  box.className = "confetti";
+  const cx = innerWidth / 2, cy = innerHeight / 2.4;
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement("i");
+    const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 160;
+    p.style.left = cx + "px"; p.style.top = cy + "px";
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+    p.style.setProperty("--dy", Math.sin(ang) * dist + 70 + "px");
+    box.appendChild(p);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 1100);
+}
+
 // ───────────────────────── Tiện ích ─────────────────────────
 const app = document.getElementById("app");
+const appbar = document.getElementById("appbar");
+const bottomnav = document.getElementById("bottomnav");
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-function go(hash) { location.hash = hash; }
+function go(h) { location.hash = h; }
 function findCourse(id) { return COURSES.find(c => c.id === id); }
 function lessonSpeechText(l) {
   const parts = [l.title + "."];
@@ -90,275 +153,505 @@ function lessonSpeechText(l) {
   l.takeaways.forEach(t => parts.push(t));
   return parts.join(" ");
 }
+function backRow(href, label) {
+  return `<div class="back-row pop"><a class="back-btn" style="display:grid;place-items:center" href="${href}">←</a><b>${esc(label)}</b></div>`;
+}
 
-// ───────────────────────── Trang chủ ─────────────────────────
-function renderHome() {
+// ───────────────────────── Khung: app bar + bottom nav ─────────────────────────
+function renderChrome(tab) {
+  const u = user();
+  if (!u) { appbar.hidden = true; bottomnav.hidden = true; return; }
+  appbar.hidden = false; bottomnav.hidden = false;
+  appbar.innerHTML = `
+    <div class="appbar-in">
+      <a class="avatar" href="#/profile">${esc((u.name || "?")[0].toUpperCase())}</a>
+      <a class="appbar-name" href="#/profile"><small>CLAUDE ACADEMY</small><b>${esc(u.name)}</b></a>
+      <a class="streak-chip" href="#/streaks">🔥 ${streak()}</a>
+    </div>`;
+  const tabs = [
+    ["#/", "📚", "Học", "home"],
+    ["#/explore", "🧭", "Khám phá", "explore"],
+    ["#/streaks", "🔥", "Chuỗi", "streaks"],
+    ["#/profile", "👤", "Hồ sơ", "profile"]
+  ];
+  bottomnav.innerHTML = tabs.map(([href, ic, lb, id]) =>
+    `<button class="nav-item ${tab === id ? "active" : ""}" data-href="${href}"><span class="ni">${ic}</span>${lb}</button>`).join("");
+  bottomnav.querySelectorAll(".nav-item").forEach(b => b.onclick = () => go(b.dataset.href));
+}
+
+// ───────────────────────── Đăng nhập ─────────────────────────
+function renderLogin() {
   TTS.stop();
-  const totalLessons = COURSES.reduce((n, c) => n + c.lessons.length, 0);
-  const doneLessons = Object.keys(P.done).length;
-  const pct = Math.round(doneLessons / totalLessons * 100);
+  renderChrome(null);
+  const known = Object.entries(USERS);
   app.innerHTML = `
-  <header class="hero">
-    <div class="hero-top">
-      <div class="logo">CLAUDE<span>\\</span>ACADEMY</div>
-      <button class="icon-btn" id="themeBtn" title="Đổi giao diện sáng/tối">🌓</button>
+  <div class="login-wrap screen">
+    <div class="login-card clay shimmer">
+      <div class="login-logo">🎓</div>
+      <h1>Claude Academy</h1>
+      <p>Học nhanh 7 khoá Claude của Anthropic — có âm thanh, minh hoạ, quiz và flashcard. Đăng nhập để app nhớ tiến độ của bạn.</p>
+      <div class="field"><label>Tên của bạn</label><input id="inName" placeholder="VD: Anh Hùng" autocomplete="name"></div>
+      <div class="field"><label>Email</label><input id="inMail" type="email" placeholder="ten@gmail.com" autocomplete="email" inputmode="email"></div>
+      <div class="login-err" id="loginErr"></div>
+      <button class="btn btn-primary pressable" id="loginBtn">Bắt đầu học 🚀</button>
+      ${known.length ? `
+      <div class="known-users">
+        <small style="font-size:11px;font-weight:800;color:var(--muted)">— HOẶC HỌC TIẾP VỚI —</small>
+        ${known.map(([em, info]) => `
+          <button class="known-user pressable" data-em="${esc(em)}">
+            <span class="avatar">${esc((info.name || "?")[0].toUpperCase())}</span>
+            <span style="text-align:left">${esc(info.name)}<br><small>${esc(em)}</small></span>
+          </button>`).join("")}
+      </div>` : ""}
     </div>
-    <h1>Học nhanh các khoá Claude</h1>
-    <p class="sub">7 khoá học tiếng Việt theo chương trình Anthropic Academy — nghe bài giảng, xem minh hoạ, làm quiz và ôn flashcard.</p>
-    <div class="stats">
-      <div class="stat"><b>${doneLessons}/${totalLessons}</b><span>bài đã học</span></div>
-      <div class="stat"><b>${pct}%</b><span>hoàn thành</span></div>
-      <div class="stat"><b>🔥 ${streak()}</b><span>ngày liên tiếp</span></div>
+  </div>`;
+  const err = document.getElementById("loginErr");
+  document.getElementById("loginBtn").onclick = () => {
+    const name = document.getElementById("inName").value.trim();
+    const mail = document.getElementById("inMail").value.trim();
+    if (name.length < 2) { err.textContent = "Vui lòng nhập tên của bạn."; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { err.textContent = "Email chưa đúng định dạng (vd: ten@gmail.com)."; return; }
+    login(name, mail); sfx("done");
+    go("#/"); route();
+  };
+  app.querySelectorAll(".known-user").forEach(b => b.onclick = () => {
+    const em = b.dataset.em;
+    login(USERS[em].name, em); sfx("done");
+    go("#/"); route();
+  });
+}
+
+// ───────────────────────── Tab Học (trang chủ) ─────────────────────────
+function renderHome() {
+  TTS.stop(); renderChrome("home");
+  const t = totals();
+  const nx = nextLesson();
+  const R = 38, CIRC = 2 * Math.PI * R;
+  app.innerHTML = `
+  <div class="screen">
+    <div class="greet pop">
+      <h1>Chào ${esc(firstName(user().name))} 👋</h1>
+      <p>${nx ? "Hôm nay học gì tiếp nhỉ?" : "Bạn đã hoàn thành tất cả bài học — quá đỉnh!"}</p>
     </div>
-  </header>
-  <main class="course-list">
-    ${COURSES.map(c => {
-      const pr = courseProgress(c);
-      const quizBest = P.quiz[c.id];
-      return `
-      <a class="course-card" href="#/course/${c.id}" style="--cc:${c.color}">
-        <div class="cc-emoji">${c.emoji}</div>
-        <div class="cc-body">
-          <div class="cc-meta">${esc(c.level)} · ${esc(c.duration)}</div>
-          <h2>${esc(c.title)}</h2>
-          <p>${esc(c.subtitle)}</p>
-          <div class="bar"><i style="width:${pr.pct}%"></i></div>
-          <div class="cc-foot">${pr.done}/${pr.total} bài${quizBest != null ? ` · quiz tốt nhất ${quizBest}%` : ""}</div>
-        </div>
-      </a>`;
-    }).join("")}
-  </main>
-  <footer class="foot">Nội dung biên soạn theo chương trình tại <b>anthropic.skilljar.com</b> — hoàn thành ở đó để nhận chứng chỉ chính thức.</footer>`;
-  document.getElementById("themeBtn").onclick = toggleTheme;
+    <div class="progress-hero clay shimmer pop" style="--d:.05s">
+      <div class="ring">
+        <svg width="88" height="88" viewBox="0 0 88 88">
+          <circle cx="44" cy="44" r="${R}" fill="none" stroke="var(--surface-2)" stroke-width="9"/>
+          <circle cx="44" cy="44" r="${R}" fill="none" stroke="url(#gr)" stroke-width="9" stroke-linecap="round"
+            stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - t.pct / 100)}"/>
+          <defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#f06595"/>
+          </linearGradient></defs>
+        </svg>
+        <b>${t.pct}%</b>
+      </div>
+      <div class="ph-stats">
+        <div class="ph-row"><span>Bài đã học</span><b>${t.doneLessons}/${t.totalLessons}</b></div>
+        <div class="ph-row"><span>Quiz đã làm</span><b>${t.quizDone}/${COURSES.length}</b></div>
+        <div class="ph-row"><span>Chuỗi ngày</span><b>🔥 ${streak()}</b></div>
+      </div>
+    </div>
+    ${nx ? `
+    <h2 class="sec-title pop" style="--d:.1s">Học tiếp ngay <small>bài kế tiếp</small></h2>
+    <a class="course-card clay shimmer pressable pop" style="--cc:${nx.c.color};--d:.12s" href="#/lesson/${nx.c.id}/${nx.i}">
+      <div class="cc-icon">${nx.c.emoji}</div>
+      <div class="cc-main">
+        <div class="cc-tag">${esc(nx.c.title)}</div>
+        <h3>${esc(nx.c.lessons[nx.i].title)}</h3>
+        <p>Bài ${nx.i + 1}/${nx.c.lessons.length} · ${esc(nx.c.lessons[nx.i].time)} · nghe được 🔊</p>
+      </div>
+      <span class="lr-go">›</span>
+    </a>` : ""}
+    <h2 class="sec-title pop" style="--d:.15s">Thư viện khoá học <small>${COURSES.length} khoá</small></h2>
+    <div class="course-grid">
+      ${COURSES.map((c, i) => {
+        const pr = courseProgress(c);
+        return `
+        <a class="course-card clay shimmer pressable pop" style="--cc:${c.color};--d:${.18 + i * .06}s" href="#/course/${c.id}">
+          <div class="cc-icon">${c.emoji}</div>
+          <div class="cc-main">
+            <div class="cc-tag">${esc(c.level)} · ${esc(c.duration)}</div>
+            <h3>${esc(c.title)}</h3>
+            <p>${esc(c.subtitle)}</p>
+            <div class="cc-bar"><div class="track"><i style="width:${pr.pct}%"></i></div><small>${pr.done}/${pr.total}</small></div>
+          </div>
+        </a>`;
+      }).join("")}
+    </div>
+    <p class="foot-note">Hoàn thành khoá tương ứng tại anthropic.skilljar.com để nhận chứng chỉ chính thức 🎓</p>
+  </div>`;
+}
+
+// ───────────────────────── Tab Khám phá ─────────────────────────
+function renderExplore() {
+  TTS.stop(); renderChrome("explore");
+  app.innerHTML = `
+  <div class="screen">
+    <div class="greet pop"><h1>Khám phá 🧭</h1><p>Lộ trình, kỳ thi chứng chỉ và tài nguyên chính thức.</p></div>
+
+    <h2 class="sec-title pop" style="--d:.05s">Lộ trình học gợi ý</h2>
+    <div class="info-card clay shimmer pop" style="--d:.08s">
+      <h3>🚀 7 ngày làm chủ Claude</h3>
+      <ol>
+        <li><b>Ngày 1–2:</b> Claude 101 + AI Fluency (nền tảng cho mọi người).</li>
+        <li><b>Ngày 3:</b> Prompt Engineering — kỹ năng nhân đôi hiệu quả.</li>
+        <li><b>Ngày 4–5:</b> Claude Code 101 + Claude Platform 101 (dành cho kỹ thuật).</li>
+        <li><b>Ngày 6:</b> MCP — kết nối Claude với thế giới.</li>
+        <li><b>Ngày 7:</b> Agent Skills + ôn flashcard toàn bộ, làm lại các quiz dưới 80%.</li>
+      </ol>
+    </div>
+
+    <h2 class="sec-title pop" style="--d:.12s">Kỳ thi chứng chỉ Claude 🎓</h2>
+    <div class="info-card clay shimmer pop" style="--d:.15s">
+      <h3>Thi miễn phí — nhận chứng chỉ chính thức của Anthropic</h3>
+      <p>Mỗi khoá trên <b>anthropic.skilljar.com</b> có bài kiểm tra cuối khoá. Vượt qua là nhận chứng chỉ (certificate) chia sẻ được lên LinkedIn. Mẹo: học xong một khoá ở đây, đạt quiz ≥ 80% rồi đăng ký thi ngay khi kiến thức còn nóng.</p>
+    </div>
+    <div class="course-grid" style="margin-top:12px">
+      ${COURSES.map((c, i) => {
+        const best = P.quiz[c.id];
+        const ready = best != null && best >= 80;
+        return `
+        <div class="cert-row clay pressable pop" style="--d:${.18 + i * .05}s">
+          <span class="ce">${c.emoji}</span>
+          <span class="cert-main"><b>${esc(c.title)}</b><small>${best != null ? `Quiz tốt nhất: ${best}%` : "Chưa làm quiz"} ${ready ? "· Sẵn sàng thi!" : ""}</small></span>
+          <a class="cert-link ${ready ? "done" : ""}" href="${c.examUrl}" target="_blank" rel="noopener">${ready ? "Thi ngay 🎓" : "Trang thi ↗"}</a>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <h2 class="sec-title pop">Tài nguyên chính thức</h2>
+    <div class="info-card clay shimmer pop">
+      <h3>📚 Học sâu hơn</h3>
+      <ul>
+        <li><a href="https://anthropic.skilljar.com" target="_blank" rel="noopener"><b>anthropic.skilljar.com</b></a> — Anthropic Academy: toàn bộ khoá học + chứng chỉ.</li>
+        <li><a href="https://docs.claude.com" target="_blank" rel="noopener"><b>docs.claude.com</b></a> — tài liệu chính thức về Claude, API, Claude Code.</li>
+        <li><a href="https://www.anthropic.com/learn" target="_blank" rel="noopener"><b>anthropic.com/learn</b></a> — trung tâm tài nguyên học tập.</li>
+        <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener"><b>modelcontextprotocol.io</b></a> — trang chủ chuẩn MCP.</li>
+      </ul>
+    </div>
+  </div>`;
+}
+
+// ───────────────────────── Tab Chuỗi (streaks) ─────────────────────────
+function renderStreaks() {
+  TTS.stop(); renderChrome("streaks");
+  const t = totals();
+  const st = streak();
+  const daySet = new Set(P.days);
+  const labels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  let week = "";
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const lit = daySet.has(key);
+    week += `<div class="day-dot ${lit ? "lit" : ""}"><i>${lit ? "🔥" : "·"}</i>${labels[d.getDay()]}</div>`;
+  }
+  const fullCourses = COURSES.filter(c => courseProgress(c).pct === 100).length;
+  const badges = [
+    ["🌱", "Khởi đầu", t.doneLessons >= 1],
+    ["📖", "Bền bỉ", t.doneLessons >= 10],
+    ["🔥", "3 ngày liền", st >= 3],
+    ["🏅", "Quiz ≥80%", Object.values(P.quiz).some(s => s >= 80)],
+    ["🎓", "Xong 1 khoá", fullCourses >= 1],
+    ["👑", "Bậc thầy", fullCourses === COURSES.length && Object.values(P.quiz).filter(s => s >= 80).length === COURSES.length]
+  ];
+  app.innerHTML = `
+  <div class="screen">
+    <div class="streak-hero clay shimmer pop">
+      <span class="flame">🔥</span>
+      <h1>${st} ngày liên tiếp</h1>
+      <p>${st === 0 ? "Học một bài hôm nay để nhóm lửa nhé!" : st < 3 ? "Giữ lửa mỗi ngày — 15 phút là đủ!" : "Tuyệt vời, đừng để lửa tắt!"}</p>
+      <div class="week-row">${week}</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card clay pop" style="--d:.06s"><b>${t.doneLessons}</b><span>bài đã học</span></div>
+      <div class="stat-card clay pop" style="--d:.1s"><b>${t.pct}%</b><span>tổng tiến độ</span></div>
+      <div class="stat-card clay pop" style="--d:.14s"><b>${t.quizDone}/${COURSES.length}</b><span>quiz đã làm</span></div>
+      <div class="stat-card clay pop" style="--d:.18s"><b>${t.quizAvg}%</b><span>điểm quiz trung bình</span></div>
+    </div>
+    <h2 class="sec-title pop" style="--d:.2s">Huy hiệu</h2>
+    <div class="badge-grid">
+      ${badges.map(([e, n, ok], i) => `<div class="badge clay pop ${ok ? "" : "locked"}" style="--d:${.22 + i * .04}s"><span class="be">${e}</span><b>${n}</b></div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ───────────────────────── Tab Hồ sơ ─────────────────────────
+function renderProfile() {
+  TTS.stop(); renderChrome("profile");
+  const u = user();
+  const t = totals();
+  const since = new Date(u.created).toLocaleDateString("vi-VN");
+  app.innerHTML = `
+  <div class="screen">
+    <div class="profile-head clay shimmer pop">
+      <div class="avatar">${esc((u.name || "?")[0].toUpperCase())}</div>
+      <h1>${esc(u.name)}</h1>
+      <p>${esc(u.email)}</p>
+      <p style="margin-top:4px">Học viên từ ${since} · ${t.doneLessons} bài · 🔥 ${streak()} ngày</p>
+    </div>
+    <h2 class="sec-title pop" style="--d:.06s">Chứng chỉ của bạn</h2>
+    <div class="course-grid">
+      ${COURSES.map((c, i) => {
+        const pr = courseProgress(c);
+        const best = P.quiz[c.id];
+        const ready = pr.pct === 100 && best != null && best >= 80;
+        return `
+        <div class="cert-row clay pop" style="--d:${.08 + i * .04}s">
+          <span class="ce">${ready ? "🏆" : c.emoji}</span>
+          <span class="cert-main"><b>${esc(c.title)}</b><small>${pr.pct}% bài học${best != null ? ` · quiz ${best}%` : ""}</small></span>
+          <a class="cert-link ${ready ? "done" : ""}" href="${c.examUrl}" target="_blank" rel="noopener">${ready ? "Thi lấy chứng chỉ" : "Xem khoá ↗"}</a>
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="action-stack" style="margin-top:20px">
+      <button class="btn pressable" id="themeBtn">🌓 Đổi giao diện sáng/tối</button>
+      <button class="btn btn-ghost pressable" id="logoutBtn">Đăng xuất</button>
+    </div>
+    <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>
+  </div>`;
+  document.getElementById("themeBtn").onclick = () => {
+    const dark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("ca-theme", dark ? "dark" : "light");
+  };
+  document.getElementById("logoutBtn").onclick = () => { logout(); renderLogin(); };
 }
 
 // ───────────────────────── Trang khoá học ─────────────────────────
 function renderCourse(cid) {
-  TTS.stop();
+  TTS.stop(); renderChrome("home");
   const c = findCourse(cid); if (!c) return renderHome();
   const pr = courseProgress(c);
+  const hero = ArtLib[c.lessons[0].art] || "";
   app.innerHTML = `
-  <header class="page-head" style="--cc:${c.color}">
-    <a class="back" href="#/">← Trang chủ</a>
-    <div class="ph-emoji">${c.emoji}</div>
-    <h1>${esc(c.title)}</h1>
-    <p>${esc(c.subtitle)}</p>
-    <div class="bar big"><i style="width:${pr.pct}%"></i></div>
-    <div class="ph-meta">${pr.done}/${pr.total} bài · ${esc(c.duration)}</div>
-  </header>
-  <main class="lesson-list">
-    ${c.lessons.map((l, i) => `
-      <a class="lesson-item ${P.done[l.id] ? "done" : ""}" href="#/lesson/${c.id}/${i}">
-        <span class="li-num">${P.done[l.id] ? "✓" : i + 1}</span>
-        <span class="li-body"><b>${esc(l.title)}</b><small>${esc(l.time)} · nghe được 🔊</small></span>
-        <span class="li-go">›</span>
-      </a>`).join("")}
-    <div class="course-actions">
-      <a class="btn primary" href="#/quiz/${c.id}">📝 Làm quiz (${c.quiz.length} câu)${P.quiz[c.id] != null ? ` — tốt nhất ${P.quiz[c.id]}%` : ""}</a>
-      <a class="btn" href="#/cards/${c.id}">🃏 Ôn flashcard (${c.cards.length} thẻ)</a>
+  <div class="screen" style="--cc:${c.color}">
+    ${backRow("#/", "Thư viện khoá học")}
+    <div class="course-hero clay shimmer pop">
+      <div class="hero-art">${hero}</div>
+      <h1>${esc(c.title)}</h1>
+      <p>${esc(c.subtitle)}</p>
+      <div class="hero-meta">
+        <span class="chip vio">${esc(c.level)}</span>
+        <span class="chip">${esc(c.duration)}</span>
+        <span class="chip">${pr.done}/${pr.total} bài</span>
+        ${P.quiz[c.id] != null ? `<span class="chip vio">quiz ${P.quiz[c.id]}%</span>` : ""}
+      </div>
+      <div class="cc-bar" style="margin-top:14px"><div class="track"><i style="width:${pr.pct}%"></i></div><small>${pr.pct}%</small></div>
     </div>
-  </main>`;
+    <h2 class="sec-title pop" style="--d:.08s">Lộ trình bài học</h2>
+    <div class="course-grid" style="grid-template-columns:1fr">
+      ${c.lessons.map((l, i) => `
+      <a class="lesson-row clay pressable pop ${P.done[l.id] ? "done" : ""}" style="--d:${.1 + i * .05}s" href="#/lesson/${c.id}/${i}">
+        <span class="lr-num">${P.done[l.id] ? "✓" : i + 1}</span>
+        <span class="lr-main"><b>${esc(l.title)}</b><small>${esc(l.time)} · 🔊 nghe được · ${(l.art2 ? 2 : 1)} minh hoạ</small></span>
+        <span class="lr-go">›</span>
+      </a>`).join("")}
+    </div>
+    <div class="action-stack">
+      <button class="btn btn-primary pressable" id="quizBtn">📝 Làm quiz (${c.quiz.length} câu)</button>
+      <button class="btn pressable" id="cardBtn">🃏 Ôn flashcard (${c.cards.length} thẻ)</button>
+    </div>
+    <div class="exam-cta clay shimmer pop" style="--d:.2s">
+      <h3>🎓 Mục tiêu: chứng chỉ chính thức</h3>
+      <p>Học hết bài + quiz đạt 80% là bạn đủ sức vượt kỳ kiểm tra của khoá này trên Anthropic Academy.</p>
+      <a class="cert-link" href="${c.examUrl}" target="_blank" rel="noopener">Trang đăng ký thi ↗</a>
+    </div>
+  </div>`;
+  document.getElementById("quizBtn").onclick = () => go(`#/quiz/${c.id}`);
+  document.getElementById("cardBtn").onclick = () => go(`#/cards/${c.id}`);
 }
 
-// ───────────────────────── Trang bài học ─────────────────────────
+// ───────────────────────── Bài học ─────────────────────────
 function renderLesson(cid, idx) {
-  TTS.stop();
+  TTS.stop(); renderChrome("home");
   const c = findCourse(cid); if (!c) return renderHome();
   idx = +idx;
   const l = c.lessons[idx]; if (!l) return renderCourse(cid);
-  const art = ArtLib[l.art] || "";
   const next = c.lessons[idx + 1];
+  const mid = Math.ceil(l.sections.length / 2);
+  const sectionsHtml = l.sections.map((s, si) => `
+    ${si === mid && l.art2 && ArtLib[l.art2] ? `<figure class="lesson-art clay pop">${ArtLib[l.art2]}</figure>` : ""}
+    <section>
+      ${s.h ? `<h2>${esc(s.h)}</h2>` : ""}
+      ${(s.p || []).map(p => `<p>${esc(p)}</p>`).join("")}
+      ${s.list ? `<ul>${s.list.map(it => `<li>${esc(it)}</li>`).join("")}</ul>` : ""}
+    </section>`).join("");
   app.innerHTML = `
-  <header class="page-head slim" style="--cc:${c.color}">
-    <a class="back" href="#/course/${c.id}">← ${esc(c.title)}</a>
-    <h1>${esc(l.title)}</h1>
-    <div class="ph-meta">Bài ${idx + 1}/${c.lessons.length} · ${esc(l.time)}</div>
-  </header>
-  <div class="audiobar" id="audiobar">
-    <button class="play-btn" id="playBtn">▶</button>
-    <div class="ab-label" id="abLabel">Nghe bài giảng (giọng tiếng Việt)</div>
-    <select id="rateSel" title="Tốc độ đọc">
-      <option value="0.85">0.85×</option>
-      <option value="1" selected>1×</option>
-      <option value="1.25">1.25×</option>
-      <option value="1.5">1.5×</option>
-    </select>
-  </div>
-  <main class="lesson">
-    <figure class="art">${art}</figure>
-    ${l.sections.map(s => `
-      <section>
-        ${s.h ? `<h2>${esc(s.h)}</h2>` : ""}
-        ${(s.p || []).map(p => `<p>${esc(p)}</p>`).join("")}
-        ${s.list ? `<ul>${s.list.map(it => `<li>${esc(it)}</li>`).join("")}</ul>` : ""}
-      </section>`).join("")}
-    <div class="takeaways" style="--cc:${c.color}">
+  <div class="screen" style="--cc:${c.color}">
+    ${backRow(`#/course/${c.id}`, `${c.title} · Bài ${idx + 1}/${c.lessons.length}`)}
+    <div class="audio-dock clay pop">
+      <button class="play-orb" id="playBtn">▶</button>
+      <div class="ad-label" id="adLabel">Nghe bài giảng — giọng tiếng Việt</div>
+      <select class="rate-sel" id="rateSel">
+        <option value="0.85">0.85×</option><option value="1" selected>1×</option>
+        <option value="1.25">1.25×</option><option value="1.5">1.5×</option>
+      </select>
+    </div>
+    <h1 class="pop" style="font-size:22px;font-weight:800;margin:0 2px 14px">${esc(l.title)}</h1>
+    <figure class="lesson-art clay shimmer pop" style="--d:.05s">${ArtLib[l.art] || ""}</figure>
+    <div class="lesson-body pop" style="--d:.1s">${sectionsHtml}</div>
+    <div class="takeaway-card clay shimmer">
       <h3>🎯 Điểm cần nhớ</h3>
       <ul>${l.takeaways.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
     </div>
-    <div class="lesson-actions">
-      <button class="btn primary" id="doneBtn">${P.done[l.id] ? "✓ Đã hoàn thành" : "Hoàn thành bài học ✓"}</button>
-      ${next ? `<a class="btn" href="#/lesson/${c.id}/${idx + 1}">Bài tiếp theo →</a>`
-             : `<a class="btn" href="#/quiz/${c.id}">Làm quiz của khoá →</a>`}
+    <div class="action-stack">
+      <button class="btn btn-primary pressable" id="doneBtn">${P.done[l.id] ? "✓ Đã hoàn thành" : "Hoàn thành bài học ✓"}</button>
+      <button class="btn pressable" id="nextBtn">${next ? "Bài tiếp theo →" : "Làm quiz của khoá →"}</button>
     </div>
-  </main>`;
+  </div>`;
 
-  // Âm thanh đọc bài
   const playBtn = document.getElementById("playBtn");
-  const rateSel = document.getElementById("rateSel");
   const supported = "speechSynthesis" in window;
-  if (!supported) document.getElementById("abLabel").textContent = "Thiết bị không hỗ trợ đọc giọng nói";
+  if (!supported) document.getElementById("adLabel").textContent = "Thiết bị không hỗ trợ đọc giọng nói";
   playBtn.onclick = () => {
     if (!supported) return;
-    if (TTS.playing) { TTS.pause(); }
-    else if (speechSynthesis.paused && speechSynthesis.speaking) { TTS.resume(); }
-    else { TTS.rate = +rateSel.value; TTS.speak(lessonSpeechText(l)); }
-    updateAudioBar();
+    if (TTS.playing) TTS.pause();
+    else if (speechSynthesis.paused && speechSynthesis.speaking) TTS.resume();
+    else { TTS.rate = +document.getElementById("rateSel").value; TTS.speak(lessonSpeechText(l)); }
+    updateAudioDock();
   };
-  rateSel.onchange = () => {
-    TTS.rate = +rateSel.value;
-    if (speechSynthesis.speaking) { TTS.rate = +rateSel.value; TTS.speak(lessonSpeechText(l)); updateAudioBar(); }
+  document.getElementById("rateSel").onchange = e => {
+    TTS.rate = +e.target.value;
+    if (speechSynthesis.speaking) { TTS.speak(lessonSpeechText(l)); updateAudioDock(); }
   };
-
+  const advance = () => { if (next) go(`#/lesson/${c.id}/${idx + 1}`); else go(`#/quiz/${c.id}`); };
   document.getElementById("doneBtn").onclick = () => {
     if (!P.done[l.id]) {
-      P.done[l.id] = true; markStudyDay(); saveProgress(P); sfx("done");
-    }
-    if (next) go(`#/lesson/${c.id}/${idx + 1}`); else go(`#/quiz/${c.id}`);
+      P.done[l.id] = true; markStudyDay(); saveP();
+      sfx("done"); confetti();
+      setTimeout(advance, 650);
+    } else advance();
   };
+  document.getElementById("nextBtn").onclick = advance;
 }
-function updateAudioBar() {
+function updateAudioDock() {
   const b = document.getElementById("playBtn");
-  const lab = document.getElementById("abLabel");
+  const lab = document.getElementById("adLabel");
   if (!b) return;
   b.textContent = TTS.playing ? "⏸" : "▶";
-  if (lab) lab.textContent = TTS.playing ? "Đang đọc… (bấm để tạm dừng)" : "Nghe bài giảng (giọng tiếng Việt)";
+  b.classList.toggle("playing", TTS.playing);
+  if (lab) lab.textContent = TTS.playing ? "Đang đọc… chạm để tạm dừng" : "Nghe bài giảng — giọng tiếng Việt";
 }
 
 // ───────────────────────── Quiz ─────────────────────────
 function renderQuiz(cid) {
-  TTS.stop();
+  TTS.stop(); renderChrome("home");
   const c = findCourse(cid); if (!c) return renderHome();
   let i = 0, score = 0, answered = false;
   function draw() {
     const q = c.quiz[i];
     app.innerHTML = `
-    <header class="page-head slim" style="--cc:${c.color}">
-      <a class="back" href="#/course/${c.id}">← ${esc(c.title)}</a>
-      <h1>Quiz · câu ${i + 1}/${c.quiz.length}</h1>
-      <div class="bar big"><i style="width:${Math.round(i / c.quiz.length * 100)}%"></i></div>
-    </header>
-    <main class="quiz">
-      <p class="q">${esc(q.q)}</p>
-      <div class="opts">
-        ${q.options.map((o, k) => `<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}
+    <div class="screen" style="--cc:${c.color}">
+      ${backRow(`#/course/${c.id}`, `Quiz · ${esc(c.title)}`)}
+      <div class="cc-bar pop"><div class="track"><i style="width:${Math.round(i / c.quiz.length * 100)}%"></i></div><small>câu ${i + 1}/${c.quiz.length}</small></div>
+      <p class="quiz-q pop" style="--d:.04s">${esc(q.q)}</p>
+      <div class="opt-stack">
+        ${q.options.map((o, k) => `<button class="opt-btn clay pressable pop" style="--d:${.07 + k * .05}s" data-k="${k}">${esc(o)}</button>`).join("")}
       </div>
-      <div class="expl" id="expl" hidden></div>
-      <button class="btn primary" id="nextQ" hidden>Câu tiếp theo →</button>
-    </main>`;
+      <div id="explBox"></div>
+    </div>`;
     answered = false;
-    document.querySelectorAll(".opt").forEach(btn => {
+    app.querySelectorAll(".opt-btn").forEach(btn => {
       btn.onclick = () => {
         if (answered) return; answered = true;
         const k = +btn.dataset.k;
         const ok = k === q.a;
         if (ok) { score++; sfx("correct"); } else sfx("wrong");
-        document.querySelectorAll(".opt").forEach((b, j) => {
+        app.querySelectorAll(".opt-btn").forEach((b, j) => {
           if (j === q.a) b.classList.add("right");
           else if (j === k) b.classList.add("wrong");
           b.disabled = true;
         });
-        const e = document.getElementById("expl");
-        e.hidden = false;
-        e.innerHTML = `<b>${ok ? "✅ Chính xác!" : "❌ Chưa đúng."}</b> ${esc(q.expl)}`;
-        const n = document.getElementById("nextQ");
-        n.hidden = false;
-        n.textContent = i + 1 < c.quiz.length ? "Câu tiếp theo →" : "Xem kết quả →";
-        n.onclick = () => { i++; i < c.quiz.length ? draw() : finish(); };
+        document.getElementById("explBox").innerHTML = `
+          <div class="expl-card clay pop"><b>${ok ? "✅ Chính xác!" : "❌ Chưa đúng."}</b> ${esc(q.expl)}</div>
+          <button class="btn btn-primary pressable pop" id="nextQ">${i + 1 < c.quiz.length ? "Câu tiếp theo →" : "Xem kết quả 🎉"}</button>`;
+        document.getElementById("nextQ").onclick = () => { i++; i < c.quiz.length ? draw() : finish(); };
       };
     });
   }
   function finish() {
     const pct = Math.round(score / c.quiz.length * 100);
     if (P.quiz[c.id] == null || pct > P.quiz[c.id]) P.quiz[c.id] = pct;
-    markStudyDay(); saveProgress(P); sfx("done");
-    const msg = pct >= 80 ? "Xuất sắc! Anh đã nắm vững khoá này. 🎉"
-              : pct >= 50 ? "Khá tốt! Ôn lại flashcard rồi thử lại để đạt trên 80%."
-              : "Đừng nản — xem lại các bài học rồi quay lại nhé.";
+    markStudyDay(); saveP(); sfx("done");
+    const passed = pct >= 80;
+    if (passed) confetti();
     app.innerHTML = `
-    <header class="page-head" style="--cc:${c.color}">
-      <a class="back" href="#/course/${c.id}">← ${esc(c.title)}</a>
-      <div class="ph-emoji">${pct >= 80 ? "🏆" : pct >= 50 ? "💪" : "📖"}</div>
-      <h1>${score}/${c.quiz.length} câu đúng (${pct}%)</h1>
-      <p>${msg}</p>
-    </header>
-    <main class="course-actions" style="padding:20px">
-      <button class="btn primary" id="retry">Làm lại quiz</button>
-      <a class="btn" href="#/cards/${c.id}">🃏 Ôn flashcard</a>
-      <a class="btn" href="#/">Về trang chủ</a>
-    </main>`;
-    document.getElementById("retry").onclick = () => { i = 0; score = 0; draw(); };
+    <div class="screen" style="--cc:${c.color}">
+      ${backRow(`#/course/${c.id}`, esc(c.title))}
+      <div class="result-hero clay shimmer pop">
+        <span class="big-emoji">${passed ? "🏆" : pct >= 50 ? "💪" : "📖"}</span>
+        <h1>${score}/${c.quiz.length} câu đúng — ${pct}%</h1>
+        <p>${passed ? "Xuất sắc! Bạn đã sẵn sàng cho kỳ thi chính thức." : pct >= 50 ? "Khá tốt! Ôn flashcard rồi làm lại để đạt trên 80%." : "Đừng nản — xem lại bài học rồi quay lại nhé."}</p>
+      </div>
+      ${passed ? `
+      <div class="exam-cta clay shimmer pop" style="--d:.1s">
+        <h3>🎓 Đăng ký thi chứng chỉ Claude ngay!</h3>
+        <p>Kiến thức đang nóng hổi — vào Anthropic Academy hoàn thành khoá «${esc(c.title)}» và làm bài kiểm tra để nhận chứng chỉ chính thức (miễn phí, khoe được lên LinkedIn).</p>
+        <a class="cert-link done" href="${c.examUrl}" target="_blank" rel="noopener">Đến trang thi chính thức ↗</a>
+      </div>` : ""}
+      <div class="action-stack" style="margin-top:14px">
+        <button class="btn ${passed ? "" : "btn-primary"} pressable" id="retryBtn">Làm lại quiz</button>
+        <button class="btn pressable" id="cardsBtn">🃏 Ôn flashcard</button>
+      </div>
+    </div>`;
+    document.getElementById("retryBtn").onclick = () => { i = 0; score = 0; draw(); };
+    document.getElementById("cardsBtn").onclick = () => go(`#/cards/${c.id}`);
   }
   draw();
 }
 
 // ───────────────────────── Flashcards ─────────────────────────
 function renderCards(cid) {
-  TTS.stop();
+  TTS.stop(); renderChrome("home");
   const c = findCourse(cid); if (!c) return renderHome();
   let i = 0, flipped = false;
-  // xáo trộn thẻ để ôn hiệu quả hơn
   const cards = [...c.cards].sort(() => Math.random() - .5);
   function draw() {
     const card = cards[i];
     app.innerHTML = `
-    <header class="page-head slim" style="--cc:${c.color}">
-      <a class="back" href="#/course/${c.id}">← ${esc(c.title)}</a>
-      <h1>Flashcard · ${i + 1}/${cards.length}</h1>
-    </header>
-    <main class="cards">
-      <div class="flashcard ${flipped ? "flipped" : ""}" id="fc">
+    <div class="screen" style="--cc:${c.color}">
+      ${backRow(`#/course/${c.id}`, `Flashcard · ${i + 1}/${cards.length}`)}
+      <div class="cc-bar pop"><div class="track"><i style="width:${Math.round((i + 1) / cards.length * 100)}%"></i></div><small>${i + 1}/${cards.length}</small></div>
+      <div class="fc-stage pop ${flipped ? "flipped" : ""}" id="fc" style="--d:.05s">
         <div class="fc-inner">
-          <div class="fc-face fc-front"><small>CÂU HỎI · chạm để lật</small><p>${esc(card.front)}</p></div>
-          <div class="fc-face fc-back" style="background:${c.color}"><small>TRẢ LỜI</small><p>${esc(card.back)}</p></div>
+          <div class="fc-face"><small>CÂU HỎI · CHẠM ĐỂ LẬT</small><p>${esc(card.front)}</p></div>
+          <div class="fc-face back"><small>TRẢ LỜI</small><p>${esc(card.back)}</p></div>
         </div>
       </div>
-      <button class="icon-btn big" id="speakCard" title="Đọc to thẻ này">🔊</button>
-      <div class="card-nav">
-        <button class="btn" id="prev" ${i === 0 ? "disabled" : ""}>← Trước</button>
-        <button class="btn primary" id="next">${i + 1 < cards.length ? "Thẻ sau →" : "Hoàn tất ✓"}</button>
+      <div class="fc-nav">
+        <button class="btn pressable" style="padding:13px" id="speakBtn">🔊</button>
+        <button class="btn pressable" id="prevBtn" ${i === 0 ? "disabled" : ""}>← Trước</button>
+        <button class="btn btn-primary pressable" id="nextBtn">${i + 1 < cards.length ? "Thẻ sau →" : "Hoàn tất ✓"}</button>
       </div>
-    </main>`;
+    </div>`;
     document.getElementById("fc").onclick = () => { flipped = !flipped; document.getElementById("fc").classList.toggle("flipped"); };
-    document.getElementById("speakCard").onclick = e => {
-      e.stopPropagation();
-      TTS.speak((flipped ? card.back : card.front));
-    };
-    document.getElementById("prev").onclick = () => { if (i > 0) { i--; flipped = false; draw(); } };
-    document.getElementById("next").onclick = () => {
+    document.getElementById("speakBtn").onclick = () => TTS.speak(flipped ? card.back : card.front);
+    document.getElementById("prevBtn").onclick = () => { if (i > 0) { i--; flipped = false; draw(); } };
+    document.getElementById("nextBtn").onclick = () => {
       if (i + 1 < cards.length) { i++; flipped = false; draw(); }
-      else { markStudyDay(); saveProgress(P); sfx("done"); go(`#/course/${c.id}`); }
+      else { markStudyDay(); saveP(); sfx("done"); confetti(); setTimeout(() => go(`#/course/${c.id}`), 650); }
     };
   }
   draw();
 }
 
 // ───────────────────────── Giao diện sáng/tối ─────────────────────────
-function toggleTheme() {
-  const dark = document.documentElement.classList.toggle("dark");
-  localStorage.setItem("ca-theme", dark ? "dark" : "light");
-}
 if (localStorage.getItem("ca-theme") === "dark") document.documentElement.classList.add("dark");
 
 // ───────────────────────── Router ─────────────────────────
 function route() {
-  const h = location.hash.slice(2); // bỏ "#/"
-  const [page, a, b] = h.split("/");
   window.scrollTo(0, 0);
+  if (!CURRENT || !USERS[CURRENT]) return renderLogin();
+  if (!P) loadUserProgress();
+  const h = location.hash.slice(2);
+  const [page, a, b] = h.split("/");
   if (page === "course" && a) renderCourse(a);
   else if (page === "lesson" && a != null && b != null) renderLesson(a, b);
   else if (page === "quiz" && a) renderQuiz(a);
   else if (page === "cards" && a) renderCards(a);
+  else if (page === "explore") renderExplore();
+  else if (page === "streaks") renderStreaks();
+  else if (page === "profile") renderProfile();
   else renderHome();
 }
 window.addEventListener("hashchange", route);

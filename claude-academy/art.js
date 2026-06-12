@@ -314,5 +314,133 @@ const ArtLib = (() => {
     txt(80, 140, "git / plugin / marketplace", { fs: 9.5 })
   );
 
+  A.voice = wrap(
+    `<circle cx="110" cy="90" r="42" fill="${C.terra}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<rect x="100" y="68" width="20" height="30" rx="10" fill="#fff"/>` +
+    `<path d="M92 92 q0 22 18 22 q18 0 18 -22 M110 114 v12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>` +
+    `<path d="M170 70 q12 20 0 40 M192 58 q22 32 0 64 M214 46 q32 44 0 88" fill="none" stroke="${C.purple}" stroke-width="5" stroke-linecap="round"/>` +
+    txt(160, 168, "Trò chuyện bằng giọng nói trên app di động", { fs: 10.5 })
+  );
+
+  A.checklist = wrap(
+    `<rect x="70" y="16" width="180" height="148" rx="12" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    [0, 1, 2, 3].map(i => {
+      const y = 38 + i * 30;
+      return `<rect x="86" y="${y}" width="18" height="18" rx="5" fill="${i < 3 ? C.green : C.cream}" stroke="${C.ink}" stroke-width="1.5"/>` +
+        (i < 3 ? `<path d="M${90} ${y + 9} l4 5 7 -9" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>` : "") +
+        `<line x1="116" y1="${y + 9}" x2="${230 - i * 12}" y2="${y + 9}" stroke="#C9BFAE" stroke-width="6" stroke-linecap="round"/>`;
+    }).join("") +
+    txt(160, 158, "thói quen nhỏ mỗi ngày → kết quả lớn", { fs: 10 })
+  );
+
+  A.artifact = wrap(
+    `<rect x="20" y="25" width="125" height="130" rx="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<rect x="32" y="40" width="80" height="16" rx="8" fill="#E3DACC"/>` +
+    `<rect x="48" y="64" width="85" height="16" rx="8" fill="${C.terra}"/>` +
+    `<rect x="32" y="88" width="70" height="16" rx="8" fill="#E3DACC"/>` +
+    txt(82, 140, "Chat", { fs: 11, w: 600 }) +
+    `<rect x="165" y="25" width="135" height="130" rx="10" fill="#241F1A"/>` +
+    txt(232, 50, "Artifact", { fs: 11, c: "#E8A87C", w: 700 }) +
+    `<rect x="180" y="62" width="105" height="50" rx="6" fill="#3A332B"/>` +
+    txt(232, 90, "</> xem trước", { fs: 10, c: "#9FD0A9" }) +
+    txt(232, 135, "chỉnh sửa · chia sẻ", { fs: 9.5, c: "#F0EBE0" }) +
+    arrow(148, 90, 162, 90)
+  );
+
+  A.research = wrap(
+    `<circle cx="95" cy="80" r="34" fill="none" stroke="${C.green}" stroke-width="7"/>` +
+    `<line x1="120" y1="105" x2="152" y2="137" stroke="${C.green}" stroke-width="9" stroke-linecap="round"/>` +
+    `<circle cx="215" cy="40" r="14" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<circle cx="262" cy="80" r="14" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<circle cx="222" cy="130" r="14" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<line x1="129" y1="76" x2="201" y2="44" stroke="${C.ink}" stroke-width="1.5" stroke-dasharray="4 4"/>` +
+    `<line x1="129" y1="82" x2="248" y2="80" stroke="${C.ink}" stroke-width="1.5" stroke-dasharray="4 4"/>` +
+    `<line x1="126" y1="92" x2="208" y2="126" stroke="${C.ink}" stroke-width="1.5" stroke-dasharray="4 4"/>` +
+    txt(160, 168, "tìm nhiều vòng — đối chiếu nguồn — có trích dẫn", { fs: 10 })
+  );
+
+  A["loop-human"] = wrap(
+    box(25, 65, 85, 50, "🧑 Bạn", C.gold) +
+    box(210, 65, 85, 50, "🤖 AI", C.terra) +
+    `<path d="M113 70 Q160 35 207 70" fill="none" stroke="${C.ink}" stroke-width="2" marker-end="url(#ah)"/>` +
+    `<path d="M207 112 Q160 147 113 112" fill="none" stroke="${C.ink}" stroke-width="2" marker-end="url(#ah)"/>` +
+    txt(160, 42, "mô tả (Description)", { fs: 10 }) +
+    txt(160, 152, "thẩm định (Discernment)", { fs: 10 }) +
+    txt(160, 92, "vòng lặp", { fs: 10, w: 700 })
+  );
+
+  A.risk = wrap(
+    `<path d="M160 26 L232 138 L88 138 Z" fill="${C.gold}" stroke="${C.ink}" stroke-width="2"/>` +
+    `<rect x="154" y="62" width="12" height="42" rx="6" fill="${C.ink}"/>` +
+    `<circle cx="160" cy="120" r="7" fill="${C.ink}"/>` +
+    txt(160, 165, "hallucination · thiên kiến · lộ dữ liệu — luôn kiểm chứng", { fs: 10 })
+  );
+
+  A.cot = wrap(
+    `<circle cx="60" cy="130" r="8" fill="${C.purple}"/>` +
+    `<circle cx="85" cy="108" r="12" fill="${C.purple}" opacity=".8"/>` +
+    `<ellipse cx="180" cy="70" rx="95" ry="44" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(180, 58, "Bước 1 → Bước 2 → Bước 3", { fs: 11, w: 600 }) +
+    txt(180, 80, "suy nghĩ trước khi trả lời", { fs: 10, c: C.purple }) +
+    box(120, 130, 120, 30, "Đáp án chính xác ✓", C.green, { fs: 10.5 })
+  );
+
+  A.chain = wrap(
+    box(14, 70, 80, 44, ["Prompt 1", "tóm tắt"], C.purple, { fs: 10 }) +
+    box(120, 70, 80, 44, ["Prompt 2", "phân tích"], C.terra, { fs: 10 }) +
+    box(226, 70, 80, 44, ["Prompt 3", "kết luận"], C.green, { fs: 10 }) +
+    arrow(97, 92, 117, 92) + arrow(203, 92, 223, 92) +
+    txt(160, 40, "Prompt chaining: chia nhỏ — mỗi bước một việc", { fs: 11, w: 600 }) +
+    txt(160, 145, "đầu ra bước trước = đầu vào bước sau", { fs: 10 })
+  );
+
+  A["plan-mode"] = wrap(
+    `<rect x="85" y="18" width="150" height="144" rx="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<rect x="125" y="8" width="70" height="22" rx="8" fill="${C.blue}"/>` + txt(160, 23, "KẾ HOẠCH", { fs: 9, c: "#fff", w: 700 }) +
+    txt(100, 56, "1. Đọc code liên quan", { anchor: "start", fs: 10 }) +
+    txt(100, 78, "2. Sửa module auth", { anchor: "start", fs: 10 }) +
+    txt(100, 100, "3. Viết test", { anchor: "start", fs: 10 }) +
+    txt(100, 122, "4. Chạy và commit", { anchor: "start", fs: 10 }) +
+    box(110, 132, 100, 22, "Bạn duyệt ✓", C.green, { fs: 9.5 }) +
+    txt(160, 174, "Plan Mode: duyệt trước — code sau", { fs: 10 })
+  );
+
+  A.compact = wrap(
+    `<rect x="25" y="40" width="110" height="100" rx="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    [0,1,2,3,4].map(i => `<line x1="38" y1="${56 + i * 17}" x2="${122 - (i%2)*14}" y2="${56 + i * 17}" stroke="#C9BFAE" stroke-width="5" stroke-linecap="round"/>`).join("") +
+    arrow(142, 90, 180, 90) +
+    `<rect x="188" y="58" width="105" height="64" rx="10" fill="${C.blue}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(240, 84, "Ý chính", { fs: 11, c: "#fff", w: 700 }) +
+    txt(240, 104, "/compact", { fs: 10, c: "#fff" }) +
+    txt(160, 162, "nén lịch sử — giữ ngữ cảnh sạch", { fs: 10.5 })
+  );
+
+  A.inspector = wrap(
+    `<rect x="30" y="22" width="260" height="130" rx="10" fill="#241F1A"/>` +
+    txt(45, 48, "MCP Inspector", { anchor: "start", fs: 12, c: "#9FD0A9", w: 700 }) +
+    `<rect x="45" y="60" width="105" height="24" rx="6" fill="#3A332B"/>` + txt(97, 76, "get_weather", { fs: 9.5, c: "#E8A87C" }) +
+    `<rect x="45" y="92" width="105" height="24" rx="6" fill="#3A332B"/>` + txt(97, 108, "search_db", { fs: 9.5, c: "#E8A87C" }) +
+    `<rect x="165" y="60" width="110" height="56" rx="6" fill="#3A332B"/>` +
+    txt(220, 82, "▶ chạy thử", { fs: 10, c: "#9FD0A9" }) +
+    txt(220, 102, "kết quả: ✓", { fs: 10, c: "#F0EBE0" }) +
+    txt(160, 168, "kiểm thử tool trước khi cắm vào Claude", { fs: 10 })
+  );
+
+  A.tokens = wrap(
+    [0,1,2,3,4,5].map(i => `<circle cx="${52 + i * 26}" cy="62" r="13" fill="${C.gold}" stroke="${C.ink}" stroke-width="1.5"/>` + txt(52 + i * 26, 66, "T", { fs: 10, c: "#fff", w: 700 })).join("") +
+    txt(125, 100, "input — giá thấp hơn", { fs: 10 }) +
+    [0,1,2].map(i => `<circle cx="${220 + i * 26}" cy="124" r="13" fill="${C.terra}" stroke="${C.ink}" stroke-width="1.5"/>` + txt(220 + i * 26, 128, "T", { fs: 10, c: "#fff", w: 700 })).join("") +
+    txt(190, 128, "output:", { fs: 10, anchor: "end" }) +
+    txt(160, 165, "trả tiền theo token — chọn model nhỏ nhất đủ tốt", { fs: 10 })
+  );
+
+  A.cert = wrap(
+    `<circle cx="160" cy="78" r="46" fill="${C.gold}" stroke="${C.ink}" stroke-width="2"/>` +
+    `<circle cx="160" cy="78" r="34" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(160, 86, "🎓", { fs: 26 }) +
+    `<path d="M140 118 L128 158 L148 148 L160 164 L172 148 L192 158 L180 118" fill="${C.terra}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(160, 178, "chứng chỉ chính thức — miễn phí tại anthropic.skilljar.com", { fs: 9.5 })
+  );
+
   return A;
 })();
