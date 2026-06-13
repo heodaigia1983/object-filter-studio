@@ -534,6 +534,142 @@ const COURSES_THUCCHIEN = [
     { front: "Lộ trình đậu chứng chỉ?", back: "Học hết bài → quiz ≥80% → ôn điểm yếu → thi khi kiến thức còn nóng." },
     { front: "Triển khai cho tổ chức?", back: "Bắt đầu từ một quy trình nhỏ, chuẩn hoá Project+Skill, đo kết quả rồi nhân rộng." }
   ]
+},
+
+// ════════════════════════ 7. LÀM CHỦ CLAUDE CODE (PRO) ════════════════════════
+{
+  id: "tc-ccpro", track: "power", emoji: "🛠️", color: "#475569",
+  title: "Làm chủ Claude Code (Pro)",
+  subtitle: "10 năng lực nâng cao: slash command, memory, skills, subagents, MCP, hooks, plugins, checkpoints.",
+  level: "Chuyên sâu", duration: "≈ 55 phút",
+  lessons: [
+    {
+      id: "tccp-1", title: "Slash commands & Memory (CLAUDE.md)", time: "11 phút", art: "custom", art2: "claudemd",
+      sections: [
+        { h: "Slash command — lệnh tắt của riêng bạn", p: [
+          "Tạo file markdown trong thư mục .claude/commands/ — mỗi file thành một lệnh /tên-file. Trong file là quy trình bạn muốn Claude làm; dùng $ARGUMENTS để nhận tham số.",
+          "Ví dụ file optimize.md mô tả các bước tối ưu code → gõ /optimize là Claude chạy đúng quy trình đó. Hợp với mọi việc bạn lặp lại: /pr (tạo pull request), /generate-api-docs (sinh tài liệu API)."
+        ]},
+        { h: "Memory — CLAUDE.md tự nạp mỗi phiên", p: [
+          "CLAUDE.md là bộ nhớ dự án: lệnh build/test, quy ước code, cấu trúc thư mục, điều cần tránh. Tự nạp đầu mỗi phiên nên Claude luôn «nhớ» bối cảnh.",
+          "Có ba cấp: cá nhân (~/.claude/CLAUDE.md, áp dụng mọi dự án), dự án (commit chung cho team), và thư mục con (quy ước riêng cho từng phần repo). Gõ /init để tạo bản đầu; gõ # trước ghi chú để thêm nhanh."
+        ]},
+        { h: "Vì sao đây là nền tảng", p: [
+          "Slash command + Memory là hai thứ đầu tiên nên thiết lập: chúng biến Claude Code từ công cụ chung thành công cụ hiểu đúng dự án và quy trình của bạn — mọi tính năng nâng cao sau đều dựa trên nền này."
+        ]}
+      ],
+      takeaways: [
+        "Slash command = file .md trong .claude/commands/ thành lệnh /tên, dùng $ARGUMENTS.",
+        "CLAUDE.md tự nạp mỗi phiên: lệnh, quy ước, điều cần tránh; 3 cấp cá nhân/dự án/thư mục.",
+        "/init tạo CLAUDE.md, gõ # để thêm ghi nhớ nhanh."
+      ]
+    },
+    {
+      id: "tccp-2", title: "Skills & Subagents", time: "11 phút", art: "skillfolder", art2: "delegate",
+      sections: [
+        { h: "Skills — năng lực tự kích hoạt", p: [
+          "Skill là thư mục chứa SKILL.md (mô tả + hướng dẫn) kèm script/template. Claude tự nạp khi gặp việc khớp mô tả — ví dụ code-review-specialist, brand-voice, doc-generator. Nhờ progressive disclosure, bạn cài nhiều skill mà không tốn ngữ cảnh."
+        ]},
+        { h: "Subagents — trợ lý chuyên biệt", p: [
+          "Subagent là agent con (trong .claude/agents/) với prompt và quyền riêng, chạy trong ngữ cảnh tách biệt. Ví dụ: code-reviewer, test-engineer, documentation-writer, secure-reviewer. Claude chính giao việc phù hợp cho chúng và giữ ngữ cảnh chính sạch sẽ."
+        ]},
+        { h: "Skill khác Subagent thế nào?", list: [
+          "Skill = KIẾN THỨC/quy trình đóng gói, tự nạp vào phiên hiện tại.",
+          "Subagent = NGƯỜI THỰC THI riêng, có ngữ cảnh và công cụ độc lập.",
+          "Phối hợp: subagent «secure-reviewer» có thể dùng skill kiểm tra bảo mật để soi code."
+        ]}
+      ],
+      takeaways: [
+        "Skill: thư mục SKILL.md tự kích hoạt theo mô tả; cài nhiều không tốn ngữ cảnh.",
+        "Subagent: agent con chuyên biệt, ngữ cảnh riêng, giữ ngữ cảnh chính sạch.",
+        "Skill là quy trình đóng gói; subagent là người thực thi độc lập."
+      ]
+    },
+    {
+      id: "tccp-3", title: "MCP & Hooks", time: "12 phút", art: "mcp", art2: "workflow",
+      sections: [
+        { h: "MCP — nối Claude Code với hệ thống ngoài", p: [
+          "Lệnh claude mcp add kết nối Claude Code với MCP server: GitHub, database, filesystem, trình duyệt... Claude khi đó dùng được các công cụ này như công cụ có sẵn — đọc schema, chạy query, thao tác repo."
+        ]},
+        { h: "Hooks — tự động hoá đảm bảo 100%", p: [
+          "Hooks là script chạy tự động tại các sự kiện trong vòng đời phiên (hệ thống có khoảng 30 sự kiện). Quan trọng nhất: PreToolUse (trước khi dùng tool — chặn/sửa được), PostToolUse (sau khi dùng — thêm phản hồi), UserPromptSubmit, Stop, SessionStart/End.",
+          "Có 5 loại hook: command (chạy lệnh shell), HTTP (gọi webhook), prompt (để mô hình tự đánh giá), MCP tool (gọi tool MCP), và agent (sinh subagent đánh giá nhiều bước)."
+        ]},
+        { h: "Ví dụ: quét bảo mật tự động", p: [
+          "Một hook PostToolUse khớp Write|Edit sẽ chạy mỗi khi Claude ghi/sửa file: dò chuỗi giống API key bị hardcode rồi cảnh báo ngay. Quy tắc vàng: việc BẮT BUỘC phải xảy ra (format, quét bảo mật, chạy test) → dùng hook, đừng dựa vào việc nhắc Claude «nhớ»."
+        ]}
+      ],
+      takeaways: [
+        "claude mcp add nối Claude Code với GitHub, database, filesystem, browser.",
+        "Hooks chạy tự động tại ~30 sự kiện; 5 loại: command, HTTP, prompt, MCP tool, agent.",
+        "Việc bắt buộc phải xảy ra → dùng hook (PreToolUse/PostToolUse), không dựa vào lời nhắc."
+      ]
+    },
+    {
+      id: "tccp-4", title: "Plugins & Checkpoints", time: "11 phút", art: "share", art2: "compact",
+      sections: [
+        { h: "Plugins — đóng gói trọn bộ quy trình", p: [
+          "Plugin gói nhiều thành phần lại với nhau: slash commands + subagents + skills + hooks + cấu hình MCP — thành một giải pháp hoàn chỉnh cho một quy trình. Ví dụ: plugin pr-review, devops-automation, documentation. Cài một lần là cả nhóm có đủ công cụ chuẩn cho quy trình đó."
+        ]},
+        { h: "Checkpoints — ảnh chụp phiên & quay lui", p: [
+          "Claude Code tự tạo checkpoint ở mỗi lượt prompt, lưu tới 30 ngày. Bấm Esc hai lần hoặc gõ /rewind để quay lui, với 5 lựa chọn: khôi phục cả code và hội thoại, chỉ hội thoại, chỉ code, tóm tắt từ điểm này, hoặc huỷ."
+        ]},
+        { h: "Dùng checkpoint để thử nghiệm an toàn", list: [
+          "So sánh phương án: lưu mốc, thử cách A, quay lui, thử cách B.",
+          "Refactor yên tâm: lỗi test thì quay về trước khi refactor.",
+          "Phục hồi nhanh khi có gì đó hỏng.",
+          "Lưu ý: checkpoint KHÔNG bắt thao tác ngoài như rm, mv, cp — dùng git cho phiên bản vĩnh viễn."
+        ]}
+      ],
+      takeaways: [
+        "Plugin gói commands + subagents + skills + hooks + MCP thành giải pháp trọn bộ cho team.",
+        "Checkpoints tự lưu mỗi lượt (30 ngày); /rewind có 5 lựa chọn khôi phục.",
+        "Checkpoint không bắt rm/mv/cp — vẫn cần git cho phiên bản vĩnh viễn."
+      ]
+    },
+    {
+      id: "tccp-5", title: "Tính năng nâng cao, CLI & quy trình thực tế", time: "10 phút", art: "plan-mode", art2: "terminal",
+      sections: [
+        { h: "Các tính năng nâng cao", list: [
+          "Planning mode: Claude lập kế hoạch để bạn duyệt trước khi động vào code.",
+          "Extended thinking: cho mô hình suy luận sâu hơn với việc khó.",
+          "Background tasks: chạy việc dài ở nền.",
+          "Headless mode: claude -p \"lệnh\" để chạy không tương tác trong script/CI."
+        ]},
+        { h: "CLI — đưa Claude Code vào pipeline", p: [
+          "Giao diện dòng lệnh cho phép tự động hoá: phân loại issue, lint theo quy ước riêng, sinh changelog, chạy trong GitHub Actions. Đây là nền để biến Claude Code thành một mắt xích trong quy trình tự động của đội."
+        ]},
+        { h: "Ghép tất cả: quy trình thực tế", p: [
+          "Sức mạnh thật đến từ phối hợp. Ví dụ «review code tự động» = slash command khởi động + subagent chuyên review + memory (quy ước team) + MCP (đọc GitHub). «Triển khai DevOps» = plugin + MCP + hooks. Bắt đầu từ một quy trình bạn lặp lại, chuẩn hoá dần bằng các năng lực trên."
+        ]}
+      ],
+      takeaways: [
+        "Nâng cao: planning mode, extended thinking, background tasks, headless (claude -p).",
+        "CLI đưa Claude Code vào script/CI: phân loại issue, lint, changelog, GitHub Actions.",
+        "Quy trình mạnh = ghép nhiều năng lực: command + subagent + memory + MCP + hooks."
+      ]
+    }
+  ],
+  quiz: [
+    { q: "Slash command tuỳ chỉnh được tạo bằng cách nào?", options: ["Sửa mã nguồn Claude", "Tạo file markdown trong .claude/commands/", "Đăng ký online", "Viết plugin C++"], a: 1, expl: "Mỗi file .md trong .claude/commands/ thành một lệnh /tên-file; dùng $ARGUMENTS để nhận tham số." },
+    { q: "CLAUDE.md có vai trò gì?", options: ["Chứa API key", "Bộ nhớ dự án tự nạp mỗi phiên: lệnh, quy ước, cấu trúc", "File log", "Mã nguồn"], a: 1, expl: "Tạo bằng /init, thêm nhanh bằng #; có 3 cấp cá nhân/dự án/thư mục." },
+    { q: "Skill khác Subagent thế nào?", options: ["Giống nhau", "Skill = quy trình đóng gói tự nạp; Subagent = người thực thi có ngữ cảnh riêng", "Skill chậm hơn", "Subagent chỉ đọc code"], a: 1, expl: "Skill là kiến thức/quy trình; subagent là agent con độc lập." },
+    { q: "Khi một việc BẮT BUỘC phải xảy ra (vd quét bảo mật sau mỗi lần sửa file)?", options: ["Nhắc Claude trong prompt", "Dùng hook (PostToolUse) để chạy tự động", "Ghi vào README", "Hỏi lại mỗi lần"], a: 1, expl: "Hook đảm bảo 100%; lời nhắc có thể bị bỏ sót." },
+    { q: "Có mấy loại hook trong Claude Code?", options: ["1", "3", "5 (command, HTTP, prompt, MCP tool, agent)", "10"], a: 2, expl: "5 loại hook, chạy tại khoảng 30 sự kiện trong vòng đời phiên." },
+    { q: "Checkpoints và /rewind dùng để làm gì?", options: ["Xoá dự án", "Quay lui về trạng thái trước: code/hội thoại — thử nghiệm an toàn", "Tăng tốc", "Đổi model"], a: 1, expl: "Tự lưu mỗi lượt (30 ngày), 5 lựa chọn khôi phục; không bắt rm/mv/cp nên vẫn cần git." },
+    { q: "Lệnh nào chạy Claude Code không tương tác trong CI?", options: ["claude --fast", "claude -p \"lệnh\" (headless)", "claude run", "claude auto"], a: 1, expl: "Headless mode đưa Claude Code vào script và pipeline tự động." },
+    { q: "Plugin là gì?", options: ["Một loại model", "Gói trọn bộ commands + subagents + skills + hooks + MCP cho một quy trình", "File ảnh", "Trình duyệt"], a: 1, expl: "Cài một lần là cả nhóm có đủ công cụ chuẩn cho quy trình đó." }
+  ],
+  cards: [
+    { front: "Slash command tạo thế nào?", back: "File .md trong .claude/commands/ → lệnh /tên-file; dùng $ARGUMENTS nhận tham số." },
+    { front: "CLAUDE.md?", back: "Bộ nhớ dự án tự nạp mỗi phiên (lệnh, quy ước, điều tránh). /init tạo, # thêm nhanh; 3 cấp." },
+    { front: "Skill vs Subagent?", back: "Skill = quy trình đóng gói tự nạp; Subagent = agent con có ngữ cảnh & quyền riêng." },
+    { front: "5 loại hook?", back: "command, HTTP, prompt, MCP tool, agent — chạy tại ~30 sự kiện (PreToolUse, PostToolUse, Stop...)." },
+    { front: "Khi nào dùng hook?", back: "Việc BẮT BUỘC phải xảy ra (format, quét bảo mật, test) — đảm bảo 100%, không dựa vào lời nhắc." },
+    { front: "Checkpoints / rewind?", back: "Tự lưu mỗi lượt (30 ngày); /rewind hoặc Esc×2; 5 lựa chọn khôi phục. Không bắt rm/mv/cp." },
+    { front: "Plugin?", back: "Gói commands + subagents + skills + hooks + MCP thành giải pháp trọn bộ cho một quy trình." },
+    { front: "Headless mode?", back: "claude -p \"lệnh\" — chạy không tương tác trong script/CI (lint, phân loại issue, changelog)." }
+  ]
 }
 ];
 
@@ -542,7 +678,8 @@ const THUCCHIEN_EXAM = "https://anthropic.skilljar.com/";
 const THUCCHIEN_VIDEOS = {
   "tc-cowork": [{ id: "uFO9EAPINWo", title: "Mastering Claude Code — Visual Breakdown", by: "Anthropic" }],
   "tc-writing": [{ id: "ysPbXH0LpIE", title: "Prompting 101", by: "Anthropic · Code w/ Claude" }],
-  "tc-extend": [{ id: "CEvIs9y1uog", title: "Don't Build Agents, Build Skills Instead", by: "Anthropic" }]
+  "tc-extend": [{ id: "CEvIs9y1uog", title: "Don't Build Agents, Build Skills Instead", by: "Anthropic" }],
+  "tc-ccpro": [{ id: "gv0WHhKelSE", title: "Claude Code best practices", by: "Anthropic · Code w/ Claude" }]
 };
 for (const c of COURSES_THUCCHIEN) {
   c.examUrl = c.examUrl || THUCCHIEN_EXAM;
