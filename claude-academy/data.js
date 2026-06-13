@@ -1022,3 +1022,6 @@ const COURSE_VIDEOS = {
   ]
 };
 for (const c of COURSES) c.videos = COURSE_VIDEOS[c.id] || [];
+
+// Đánh dấu giáo trình: 7 khoá gốc thuộc nhánh "Anthropic Academy chính thức"
+for (const c of COURSES) if (!c.track) c.track = "academy";
