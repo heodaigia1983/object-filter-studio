@@ -448,12 +448,23 @@ function renderHome() {
       </div>
       <span class="lr-go">›</span>
     </a>` : ""}
-    <h2 class="sec-title pop" style="--d:.15s">Thư viện khoá học <small>${COURSES.length} khoá</small></h2>
+    ${trackSection("academy", "📘 Giáo trình chính thức", "Anthropic Academy", .15)}
+    ${trackSection("power", "⚡ Giáo trình thực chiến", "Power User", .2)}
+    <p class="foot-note">Hoàn thành khoá tương ứng tại anthropic.skilljar.com để nhận chứng chỉ chính thức 🎓<br>${COPYRIGHT}</p>
+  </div>`;
+}
+
+// Một nhóm giáo trình trên trang chủ (lọc theo track)
+function trackSection(track, title, badge, delay) {
+  const list = COURSES.filter(c => (c.track || "academy") === track);
+  if (!list.length) return "";
+  return `
+    <h2 class="sec-title pop" style="--d:${delay}s">${title} <small>${list.length} khoá · ${esc(badge)}</small></h2>
     <div class="course-grid">
-      ${COURSES.map((c, i) => {
+      ${list.map((c, i) => {
         const pr = courseProgress(c);
         return `
-        <a class="course-card clay shimmer pressable pop" style="--cc:${c.color};--d:${.18 + i * .06}s" href="#/course/${c.id}">
+        <a class="course-card clay shimmer pressable pop" style="--cc:${c.color};--d:${delay + .03 + i * .05}s" href="#/course/${c.id}">
           <div class="cc-icon">${c.emoji}</div>
           <div class="cc-main">
             <div class="cc-tag">${esc(c.level)} · ${esc(c.duration)}</div>
@@ -463,9 +474,7 @@ function renderHome() {
           </div>
         </a>`;
       }).join("")}
-    </div>
-    <p class="foot-note">Hoàn thành khoá tương ứng tại anthropic.skilljar.com để nhận chứng chỉ chính thức 🎓<br>${COPYRIGHT}</p>
-  </div>`;
+    </div>`;
 }
 
 // ───────────────────────── Tab Khám phá ─────────────────────────
