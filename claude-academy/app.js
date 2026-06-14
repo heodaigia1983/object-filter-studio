@@ -23,6 +23,7 @@ function loadUserProgress() {
   P.quiz = P.quiz || {};   // courseId -> điểm % tốt nhất
   P.days = P.days || [];   // các ngày có học (yyyy-mm-dd)
   P.wrong = P.wrong || {}; // courseId -> [chỉ số câu từng trả lời sai] (cho Ôn tập thông minh)
+  P.mock = P.mock || {};   // scope -> điểm % thi thử tốt nhất
   saveP();
 }
 function saveP() { if (CURRENT) saveJSON(progressKey(CURRENT), P); }
@@ -303,7 +304,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.1.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.2.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
@@ -525,7 +526,17 @@ function renderExplore() {
   TTS.stop(); renderChrome("explore");
   app.innerHTML = `
   <div class="screen">
-    <div class="greet pop"><h1>Khám phá 🧭</h1><p>Lộ trình, kỳ thi chứng chỉ và tài nguyên chính thức.</p></div>
+    <div class="greet pop"><h1>Khám phá 🧭</h1><p>Thi thử, lộ trình, kỳ thi chứng chỉ và tài nguyên chính thức.</p></div>
+
+    <a class="course-card clay shimmer pressable pop" style="--cc:#7c3aed;--d:.03s" href="#/mock">
+      <div class="cc-icon">📝</div>
+      <div class="cc-main">
+        <div class="cc-tag">Mô phỏng phòng thi</div>
+        <h3>Thi thử chứng chỉ</h3>
+        <p>Trộn câu hỏi nhiều khoá, bấm giờ, chấm đạt/rớt 80%.${P.mock && Object.keys(P.mock).length ? ` Tốt nhất: ${Math.max(...Object.values(P.mock))}%` : ""}</p>
+      </div>
+      <span class="lr-go">›</span>
+    </a>
 
     <h2 class="sec-title pop" style="--d:.05s">Lộ trình học gợi ý</h2>
     <div class="info-card clay shimmer pop" style="--d:.08s">
@@ -969,6 +980,138 @@ function renderInstall() {
   };
 }
 
+// ───────────────────────── Thi thử (Mock Exam) ─────────────────────────
+let mockTimer = null;
+const MOCK_SCOPES = {
+  all:     { label: "Toàn bộ chương trình", filter: () => true },
+  academy: { label: "Giáo trình chính thức", filter: c => (c.track || "academy") === "academy" },
+  power:   { label: "Giáo trình thực chiến", filter: c => c.track === "power" }
+};
+function mockPool(scope) {
+  const pool = [];
+  for (const c of COURSES) if (MOCK_SCOPES[scope].filter(c))
+    c.quiz.forEach((q, qi) => pool.push({ c, qi, q }));
+  return pool;
+}
+function renderMockSetup() {
+  TTS.stop(); renderChrome("explore");
+  app.innerHTML = `
+  <div class="screen">
+    ${backRow("#/explore", "Khám phá")}
+    <div class="course-hero clay shimmer pop">
+      <div class="ph-emoji" style="font-size:46px">📝</div>
+      <h1>Thi thử chứng chỉ</h1>
+      <p>Mô phỏng phòng thi: câu hỏi trộn ngẫu nhiên từ nhiều khoá, có bấm giờ, chấm đạt/rớt ở mốc 80%. Luyện cho quen áp lực trước khi thi thật.</p>
+    </div>
+    <h2 class="sec-title pop" style="--d:.06s">Chọn phạm vi đề</h2>
+    <div class="action-stack">
+      ${Object.entries(MOCK_SCOPES).map(([k, v], i) => {
+        const n = mockPool(k).length;
+        const best = P.mock[k];
+        return `<button class="btn ${i === 0 ? "btn-primary" : ""} pressable" data-scope="${k}">${esc(v.label)} · ${Math.min(20, n)} câu${best != null ? ` · tốt nhất ${best}%` : ""}</button>`;
+      }).join("")}
+    </div>
+    <div class="info-card clay pop" style="--d:.16s">
+      <h3>📋 Luật thi thử</h3>
+      <ul style="padding-left:20px;margin-top:6px">
+        <li>20 câu (hoặc ít hơn nếu phạm vi nhỏ), trộn ngẫu nhiên.</li>
+        <li>Bấm giờ 1 phút/câu — hết giờ tự nộp bài.</li>
+        <li>Không hiện đúng/sai ngay; xem kết quả & giải thích ở cuối.</li>
+        <li>Đạt từ 80% là «Đỗ». Câu sai tự vào mục Ôn tập thông minh.</li>
+      </ul>
+    </div>
+  </div>`;
+  app.querySelectorAll("[data-scope]").forEach(b => b.onclick = () => go(`#/mock/${b.dataset.scope}`));
+}
+function renderMock(scope) {
+  TTS.stop(); renderChrome("explore");
+  if (!MOCK_SCOPES[scope]) return renderMockSetup();
+  const pool = mockPool(scope).sort(() => Math.random() - .5).slice(0, 20);
+  const total = pool.length;
+  const answers = new Array(total).fill(-1);
+  let i = 0;
+  let remaining = total * 60; // 1 phút/câu
+  clearInterval(mockTimer);
+  mockTimer = setInterval(() => {
+    remaining--;
+    const el = document.getElementById("mockClock");
+    if (el) { const m = Math.floor(remaining / 60), s = remaining % 60; el.textContent = `⏱ ${m}:${String(s).padStart(2, "0")}`; el.classList.toggle("low", remaining <= 60); }
+    if (remaining <= 0) { clearInterval(mockTimer); finish(); }
+  }, 1000);
+
+  function draw() {
+    const { q } = pool[i];
+    const order = q.options.map((_, k) => k).sort(() => Math.random() - .5);
+    app.innerHTML = `
+    <div class="screen">
+      <div class="mock-bar">
+        <button class="back-btn" id="mockQuit" style="width:38px;height:38px">✕</button>
+        <div class="track" style="flex:1"><i style="width:${Math.round(i / total * 100)}%"></i></div>
+        <span class="mock-clock" id="mockClock">⏱ ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}</span>
+      </div>
+      <p class="ph-meta pop" style="margin:4px 2px 0">Câu ${i + 1}/${total}</p>
+      <p class="quiz-q pop" style="--d:.04s">${esc(q.q)}</p>
+      <div class="opt-stack">
+        ${order.map((o, k) => `<button class="opt-btn clay pressable pop ${answers[i] === o ? "chosen" : ""}" style="--d:${.06 + k * .04}s" data-k="${o}">${esc(q.options[o])}</button>`).join("")}
+      </div>
+      <div class="action-stack" style="margin-top:16px">
+        <button class="btn btn-primary pressable" id="mockNext">${i + 1 < total ? "Câu tiếp theo →" : "Nộp bài ✓"}</button>
+        ${i > 0 ? `<button class="btn pressable" id="mockPrev">← Câu trước</button>` : ""}
+      </div>
+    </div>`;
+    app.querySelectorAll(".opt-btn").forEach(btn => btn.onclick = () => {
+      answers[i] = +btn.dataset.k;
+      app.querySelectorAll(".opt-btn").forEach(b => b.classList.toggle("chosen", +b.dataset.k === answers[i]));
+    });
+    document.getElementById("mockNext").onclick = () => { if (i + 1 < total) { i++; draw(); } else finish(); };
+    const pv = document.getElementById("mockPrev"); if (pv) pv.onclick = () => { i--; draw(); };
+    document.getElementById("mockQuit").onclick = () => { clearInterval(mockTimer); go("#/explore"); };
+  }
+
+  function finish() {
+    clearInterval(mockTimer);
+    let score = 0;
+    pool.forEach((item, k) => {
+      const ok = answers[k] === item.q.a;
+      if (ok) score++;
+      trackAnswer(item.c.id, item.qi, ok); // câu sai vào Ôn tập thông minh
+    });
+    const pct = Math.round(score / total * 100);
+    const pass = pct >= 80;
+    if (P.mock[scope] == null || pct > P.mock[scope]) P.mock[scope] = pct;
+    markStudyDay(); saveP(); sfx("done");
+    if (pass) confetti();
+    app.innerHTML = `
+    <div class="screen">
+      ${backRow("#/explore", "Khám phá")}
+      <div class="result-hero clay shimmer pop">
+        <span class="big-emoji">${pass ? "🏆" : "📚"}</span>
+        <h1>${score}/${total} đúng — ${pct}%</h1>
+        <p>${pass ? "Đỗ! Bạn đã sẵn sàng cho kỳ thi thật. Đăng ký thi để lấy chứng chỉ nhé!" : "Chưa đạt mốc 80%. Xem lại các câu sai bên dưới rồi thi lại — sắp được rồi!"}</p>
+      </div>
+      ${pass ? `<a class="btn btn-gold pressable pop" href="https://anthropic.skilljar.com/" target="_blank" rel="noopener" style="--d:.08s">🎓 Đăng ký thi chứng chỉ chính thức ↗</a>` : ""}
+      <h2 class="sec-title pop">Xem lại đáp án</h2>
+      ${pool.map((item, k) => {
+        const ok = answers[k] === item.q.a;
+        const your = answers[k] >= 0 ? item.q.options[answers[k]] : "(bỏ trống)";
+        return `
+        <div class="info-card clay pop" style="--d:${.04 + k * .02}s">
+          <h3 style="font-size:14px">${ok ? "✅" : "❌"} ${esc(item.q.q)}</h3>
+          ${ok ? "" : `<p style="color:#c0564b"><b>Bạn chọn:</b> ${esc(your)}</p>`}
+          <p style="color:var(--green,#1fa873)"><b>Đáp án đúng:</b> ${esc(item.q.options[item.q.a])}</p>
+          <p style="margin-top:4px">${esc(item.q.expl)}</p>
+        </div>`;
+      }).join("")}
+      <div class="action-stack">
+        <button class="btn btn-primary pressable" id="mockRetry">Thi lại</button>
+        <a class="btn pressable" href="#/review">🧠 Ôn câu sai</a>
+      </div>
+    </div>`;
+    document.getElementById("mockRetry").onclick = () => go(`#/mock/${scope}`);
+  }
+  draw();
+}
+
 // ───────────────────────── Ôn tập thông minh (câu từng sai) ─────────────────────────
 function renderReview() {
   TTS.stop(); renderChrome("home");
@@ -1093,6 +1236,7 @@ if (localStorage.getItem("ca-theme") === "dark") document.documentElement.classL
 // ───────────────────────── Router ─────────────────────────
 function route() {
   window.scrollTo(0, 0);
+  clearInterval(mockTimer); // dừng đồng hồ thi thử khi rời trang
   MUSIC.videoHold = false; // rời trang có video → cho phép nhạc nền trở lại
   if (!CURRENT || !USERS[CURRENT]) return renderLogin();
   if (!P) loadUserProgress();
@@ -1103,6 +1247,7 @@ function route() {
   else if (page === "quiz" && a) renderQuiz(a);
   else if (page === "cards" && a) renderCards(a);
   else if (page === "review") renderReview();
+  else if (page === "mock") { a ? renderMock(a) : renderMockSetup(); }
   else if (page === "install") renderInstall();
   else if (page === "explore") renderExplore();
   else if (page === "streaks") renderStreaks();
