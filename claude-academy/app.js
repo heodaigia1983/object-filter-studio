@@ -329,11 +329,35 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.7.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.8.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // Tài nguyên của tác giả (playlist video + thư mục tài liệu Drive)
 const AUTHOR_PLAYLIST = "PLZDO3QBqL6cKq07P5sVfay2Ih6GXslCDb";
 const AUTHOR_DRIVE = "https://drive.google.com/drive/folders/14skzT5zgxc7UqC9VPGo0q2EzHv0OVvYa";
+// 30 video của tác giả, phân nhóm theo chủ đề khớp từng khoá học (gắn từ ảnh playlist)
+const AUTHOR_VIDEOS = [
+  { group: "Nhập môn & lộ trình", course: "claude-101", items: [
+    ["Cuộc trò chuyện đầu tiên — Công thức Bối cảnh", "6:15"], ["Chat, Cowork hay Code", "6:00"],
+    ["Tự học với Claude", "8:47"], ["Lộ trình 30 ngày biến Claude thành đồng nghiệp", "5:29"] ] },
+  { group: "Tư duy cộng tác — Khung 4D", course: "ai-fluency", items: [
+    ["Hiểu Cỗ Máy & Khung 4D", "6:06"], ["Khung 4D: Hợp tác với AI — Giao việc (Delegation)", "6:23"],
+    ["Pre Session 2: Vòng lặp D–D — Phản định (Discernment)", "7:33"] ] },
+  { group: "Viết & Prompt", course: "tc-writing", items: [
+    ["Email Tiếng Việt — Viết Đúng Tông Giọng", "6:16"], ["Thương hiệu từ Zero & Audit", "5:17"] ] },
+  { group: "Văn phòng AI: Excel, Tài liệu, Artifacts", course: "tc-office", items: [
+    ["Excel Không Kỹ Thuật", "5:36"], ["Đọc tài liệu trong 15 phút", "7:31"], ["Explainer Video", "7:05"],
+    ["Artifacts — 4 Loại cho 80% Nhu Cầu", "6:24"], ["Projects & Artifacts", "6:32"], ["Trước buổi 3: Bàn làm việc Claude — Artifacts", "4:55"] ] },
+  { group: "Claude Cowork", course: "tc-cowork", items: [
+    ["Cowork là gì", "8:16"], ["Cowork: Giao việc", "4:44"], ["Làm chủ Claude Cowork 1", "4:17"],
+    ["Làm chủ Claude Cowork", "5:58"], ["Làm chủ Claude Cowork — Tập 3", "6:49"], ["Vòng Lặp Nhiệm Vụ Cowork", "4:18"] ] },
+  { group: "Projects", course: "claude-101", items: [
+    ["Chuyên gia Claude Projects", "4:15"], ["Khi nào nên tách một Project?", "4:15"] ] },
+  { group: "Skills, Connectors & Research", course: "tc-extend", items: [
+    ["Kỹ năng Đóng gói Quy trình", "6:08"], ["Skill Builder Masterclass", "4:54"], ["Skills & Research", "5:24"],
+    ["Chế độ Research — Đào sâu", "4:35"], ["Từ Họp Hành đến Hành Động — Connectors", "6:43"] ] },
+  { group: "Sự nghiệp & ứng dụng nâng cao", course: "tc-career", items: [
+    ["AI + Sự nghiệp: Vượt xa CV", "4:57"], ["AI Agentic 2026", "5:20"], ["Trò chuyện Claude chuyên nghiệp", "6:17"] ] }
+];
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
@@ -1130,6 +1154,22 @@ function renderLibrary() {
     <a class="cert-row clay pressable pop" style="--d:.09s" href="https://youtube.com/playlist?list=${AUTHOR_PLAYLIST}" target="_blank" rel="noopener">
       <span class="ce">▶️</span><span class="cert-main"><b>Mở trên YouTube</b><small>Xem ngoài app, lưu vào tài khoản của bạn</small></span><span class="cert-link">Mở ↗</span>
     </a>
+
+    <h2 class="sec-title pop" style="--d:.1s">🗂️ Mục lục video theo chủ đề <small>${AUTHOR_VIDEOS.reduce((n,g)=>n+g.items.length,0)} video</small></h2>
+    ${AUTHOR_VIDEOS.map((g, i) => {
+      const c = findCourse(g.course);
+      return `
+      <div class="vidgroup clay pop" style="--cc:${c ? c.color : "#d9734e"};--d:${.11 + i * .03}s">
+        <div class="vg-head">
+          <b>${esc(g.group)}</b>
+          ${c ? `<a class="vg-link" href="#/course/${c.id}">${c.emoji} Học khoá</a>` : ""}
+        </div>
+        <ul class="vg-list">
+          ${g.items.map(([t, d]) => `<li><span>${esc(t)}</span><i>${d}</i></li>`).join("")}
+        </ul>
+      </div>`;
+    }).join("")}
+    <p class="foot-note" style="text-align:left;padding:6px 4px 10px">▶️ Mở trình phát playlist ở trên để xem các video này. Muốn em gắn đúng từng video vào từng bài học (bấm là phát ngay trong bài), anh gửi em link chia sẻ của từng video nhé.</p>
 
     <h2 class="sec-title pop" style="--d:.12s">📄 Tài liệu PDF & video (Drive)</h2>
     <a class="cert-row clay shimmer pressable pop" style="--d:.13s" href="${AUTHOR_DRIVE}" target="_blank" rel="noopener">
