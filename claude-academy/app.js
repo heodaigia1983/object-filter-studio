@@ -300,6 +300,28 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
+const APP_VERSION = "2.0.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+
+// ── Cài đặt PWA (thêm vào màn hình chính) ──
+let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+function platformGuess() {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return "desktop";
+}
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); deferredPrompt = e;
+  const b = document.getElementById("installBar"); if (b) b.hidden = false;
+});
+window.addEventListener("appinstalled", () => {
+  deferredPrompt = null;
+  localStorage.setItem("ca-installed", "1");
+  const b = document.getElementById("installBar"); if (b) b.hidden = true;
+});
 
 // ───────────────────────── Tiện ích ─────────────────────────
 const app = document.getElementById("app");
@@ -408,6 +430,7 @@ function renderHome() {
       <h1>Chào ${esc(user().name)} 👋</h1>
       <p>${nx ? "Hôm nay học gì tiếp nhỉ?" : "Bạn đã hoàn thành tất cả bài học — quá đỉnh!"}</p>
     </div>
+    ${installHintHTML()}
     <div class="progress-hero clay shimmer pop" style="--d:.05s">
       <div class="ring">
         <svg width="88" height="88" viewBox="0 0 88 88">
@@ -452,6 +475,23 @@ function renderHome() {
     ${trackSection("power", "⚡ Giáo trình thực chiến", "Power User", .2)}
     <p class="foot-note">Hoàn thành khoá tương ứng tại anthropic.skilljar.com để nhận chứng chỉ chính thức 🎓<br>${COPYRIGHT}</p>
   </div>`;
+  const ih = document.getElementById("installHint");
+  if (ih) {
+    ih.querySelector("[data-act=open]").onclick = () => go("#/install");
+    ih.querySelector("[data-act=dismiss]").onclick = () => { localStorage.setItem("ca-install-hidden", "1"); ih.remove(); };
+  }
+}
+
+// Banner gợi ý cài app lên màn hình chính (ẩn nếu đã cài hoặc đã tắt)
+function installHintHTML() {
+  if (isStandalone() || localStorage.getItem("ca-installed") === "1" || localStorage.getItem("ca-install-hidden") === "1") return "";
+  return `
+    <div class="install-hint clay pop" id="installHint" style="--d:.04s">
+      <span class="ih-ico">📲</span>
+      <div class="ih-body"><b>Cài Claude Academy lên máy</b><small>Mở toàn màn hình như app thật, học cả khi offline.</small></div>
+      <button class="ih-btn" data-act="open">Cài đặt</button>
+      <button class="ih-x" data-act="dismiss" aria-label="Đóng">✕</button>
+    </div>`;
 }
 
 // Một nhóm giáo trình trên trang chủ (lọc theo track)
@@ -617,6 +657,11 @@ function renderProfile() {
       <p>Liên hệ tác giả: <a href="mailto:${CONTACT}" style="color:var(--violet);font-weight:700">${CONTACT}</a></p>
       <p>Điện thoại: <a href="tel:${PHONE.replace(/\./g, "")}" style="color:var(--violet);font-weight:700">☎ ${PHONE}</a></p>
       <p style="margin-top:8px">Nội dung biên soạn theo đề cương khoá học công khai của Anthropic Academy. Claude và Anthropic là thương hiệu của Anthropic PBC.</p>
+      <p style="margin-top:8px"><b>Phiên bản:</b> v${APP_VERSION}${isStandalone() ? " · đã cài trên máy ✅" : ""}</p>
+    </div>
+    <div class="action-stack">
+      <button class="btn btn-primary pressable" id="installBtn">📲 Cài đặt / Hướng dẫn cài</button>
+      <button class="btn pressable" id="updateBtn">🔄 Kiểm tra cập nhật</button>
     </div>
     <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>
   </div>`;
@@ -640,6 +685,8 @@ function renderProfile() {
     localStorage.setItem("ca-theme", dark ? "dark" : "light");
   };
   document.getElementById("logoutBtn").onclick = () => { logout(); renderLogin(); };
+  document.getElementById("installBtn").onclick = () => go("#/install");
+  document.getElementById("updateBtn").onclick = () => checkForUpdate(true);
 }
 
 // ───────────────────────── Trang khoá học ─────────────────────────
@@ -852,6 +899,73 @@ function renderQuiz(cid) {
   draw();
 }
 
+// ───────────────────────── Hướng dẫn cài đặt (PWA) ─────────────────────────
+function renderInstall() {
+  TTS.stop(); renderChrome("home");
+  const plat = platformGuess();
+  const done = isStandalone();
+  const guides = {
+    android: { ico: "🤖", name: "Android (Chrome)", steps: [
+      "Mở trang này bằng trình duyệt <b>Chrome</b>.",
+      "Bấm nút <b>⋮</b> (ba chấm) ở góc trên bên phải.",
+      "Chọn <b>«Thêm vào Màn hình chính»</b> (Add to Home screen).",
+      "Bấm <b>Thêm/Cài đặt</b> — biểu tượng 🎓 xuất hiện như một app thật."
+    ]},
+    ios: { ico: "🍎", name: "iPhone / iPad (Safari)", steps: [
+      "Mở trang này bằng trình duyệt <b>Safari</b> (không phải Chrome).",
+      "Bấm nút <b>Chia sẻ</b> (hình ô vuông có mũi tên đi lên).",
+      "Kéo xuống chọn <b>«Thêm vào MH chính»</b> (Add to Home Screen).",
+      "Bấm <b>Thêm</b> ở góc trên — app sẽ nằm trên màn hình chính."
+    ]},
+    desktop: { ico: "💻", name: "Máy tính (Chrome/Edge)", steps: [
+      "Mở trang bằng <b>Chrome</b> hoặc <b>Edge</b>.",
+      "Nhìn cuối thanh địa chỉ, bấm biểu tượng <b>cài đặt</b> (màn hình có mũi tên ⊕).",
+      "Hoặc menu <b>⋮ → Cài đặt Claude Academy</b>.",
+      "Bấm <b>Cài đặt</b> — app mở trong cửa sổ riêng."
+    ]}
+  };
+  const order = [plat, ...Object.keys(guides).filter(p => p !== plat)];
+  app.innerHTML = `
+  <div class="screen">
+    ${backRow("#/", "Trang chủ")}
+    <div class="course-hero clay shimmer pop">
+      <div class="ph-emoji" style="font-size:46px">📲</div>
+      <h1>Cài đặt ứng dụng</h1>
+      <p>${done ? "✅ Bạn đã cài app rồi — đang chạy ở chế độ toàn màn hình!" : "Cài Claude Academy lên thiết bị để mở nhanh, toàn màn hình và học cả khi không có mạng."}</p>
+      ${deferredPrompt && !done ? `<button class="btn btn-primary pressable" id="nativeInstall" style="margin-top:14px">⬇️ Cài đặt ngay</button>` : ""}
+    </div>
+    ${done ? "" : order.map((p, i) => {
+      const g = guides[p];
+      return `
+      <div class="info-card clay shimmer pop" style="--d:${.06 + i * .05}s">
+        <h3>${g.ico} ${g.name}${i === 0 ? ' <span class="chip vio" style="--cc:#7c3aed">thiết bị của bạn</span>' : ""}</h3>
+        <ol style="padding-left:20px;margin-top:8px">
+          ${g.steps.map(s => `<li style="margin-bottom:6px;font-size:14px;font-weight:500;color:var(--ink)">${s}</li>`).join("")}
+        </ol>
+      </div>`;
+    }).join("")}
+    <div class="info-card clay pop">
+      <h3>💡 Vì sao nên cài?</h3>
+      <ul style="padding-left:20px;margin-top:6px">
+        <li>Mở bằng một chạm, không cần gõ địa chỉ.</li>
+        <li>Chạy toàn màn hình, không có thanh trình duyệt.</li>
+        <li>Học được cả khi offline (sau lần mở đầu có mạng).</li>
+        <li>Tự báo khi có bản cập nhật mới.</li>
+      </ul>
+    </div>
+    <p class="foot-note">Phiên bản hiện tại: v${APP_VERSION}</p>
+  </div>`;
+  const ni = document.getElementById("nativeInstall");
+  if (ni) ni.onclick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const r = await deferredPrompt.userChoice;
+    if (r && r.outcome === "accepted") localStorage.setItem("ca-installed", "1");
+    deferredPrompt = null;
+    go("#/");
+  };
+}
+
 // ───────────────────────── Ôn tập thông minh (câu từng sai) ─────────────────────────
 function renderReview() {
   TTS.stop(); renderChrome("home");
@@ -986,6 +1100,7 @@ function route() {
   else if (page === "quiz" && a) renderQuiz(a);
   else if (page === "cards" && a) renderCards(a);
   else if (page === "review") renderReview();
+  else if (page === "install") renderInstall();
   else if (page === "explore") renderExplore();
   else if (page === "streaks") renderStreaks();
   else if (page === "profile") renderProfile();
@@ -1010,8 +1125,71 @@ document.addEventListener("pointerdown", e => {
 // trạng thái chỉ-đọc phục vụ kiểm thử tự động
 window.__ca = { get music() { return { playing: MUSIC.playing, enabled: FX.music, ttsHold: MUSIC._ttsHold, videoHold: MUSIC.videoHold }; } };
 
-// ───────────────────────── PWA: service worker ─────────────────────────
-if ("serviceWorker" in navigator && location.protocol === "https:") {
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
+// ───────────────────────── PWA: service worker + báo cập nhật ─────────────────────────
+let swReg = null, swReloading = false, lastManualCheck = false, userWantsReload = false;
+
+function showUpdateBanner() {
+  if (document.getElementById("updateBanner")) return;
+  const bar = document.createElement("div");
+  bar.id = "updateBanner";
+  bar.className = "update-banner";
+  bar.innerHTML = `
+    <span>✨ Đã có bản cập nhật mới!</span>
+    <button id="ubReload">Cập nhật ngay</button>
+    <button id="ubLater" aria-label="Để sau">✕</button>`;
+  document.body.appendChild(bar);
+  requestAnimationFrame(() => bar.classList.add("show"));
+  document.getElementById("ubReload").onclick = () => {
+    userWantsReload = true; // người học chủ động cập nhật → luôn tải lại khi SW mới tiếp quản
+    const w = swReg && swReg.waiting;
+    if (w) { w.postMessage({ type: "SKIP_WAITING" }); } else { location.reload(); }
+  };
+  document.getElementById("ubLater").onclick = () => bar.remove();
+}
+
+function checkForUpdate(manual) {
+  lastManualCheck = !!manual;
+  if (!swReg) { if (manual) toast("Bạn đang dùng bản mới nhất 👍"); return; }
+  if (swReg.waiting) { showUpdateBanner(); return; }
+  swReg.update().then(() => {
+    setTimeout(() => {
+      if (swReg.waiting) showUpdateBanner();
+      else if (manual) toast("Bạn đang dùng bản mới nhất 👍");
+    }, 1200);
+  }).catch(() => { if (manual) toast("Không kiểm tra được — thử lại khi có mạng."); });
+}
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add("show"));
+  setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 300); }, 2600);
+}
+
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  // có controller sẵn = đã từng cài SW → controllerchange sau này là CẬP NHẬT (cần tải lại).
+  // Lần cài đầu tiên (controller null) thì KHÔNG tải lại để tránh reload thừa.
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("./sw.js").then(reg => {
+    swReg = reg;
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner();
+    reg.addEventListener("updatefound", () => {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener("statechange", () => {
+        // có bản mới đã cài xong trong khi vẫn còn bản cũ đang chạy
+        if (sw.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner();
+      });
+    });
+  }).catch(() => {});
+  // SW mới giành quyền điều khiển → tải lại để áp dụng bản mới (bỏ qua lần cài đầu)
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (swReloading) return;
+    if (!hadController && !userWantsReload) return; // lần cài đầu, không do người dùng → bỏ qua
+    swReloading = true; location.reload();
+  });
+  // chủ động kiểm tra cập nhật khi mở lại app
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(false); });
 }
 })();
