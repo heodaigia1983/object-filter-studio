@@ -431,6 +431,7 @@ html.dark .exam-cta { background: linear-gradient(135deg, #45330f, #57400f); }
 .vg-list { list-style: none; display: grid; gap: 7px; }
 .vg-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13.5px; font-weight: 600; }
 .vg-list li::before { content: "▶"; color: var(--cc, var(--violet)); font-size: 9px; margin-right: -4px; }
+.docgroup .vg-list li::before { content: "📄"; font-size: 11px; }
 .vg-list li span { flex: 1; }
 .vg-list li i { font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--muted); }
 .pl-panel b { font-size: 15px; font-weight: 800; }
