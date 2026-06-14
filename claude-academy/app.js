@@ -24,6 +24,8 @@ function loadUserProgress() {
   P.days = P.days || [];   // các ngày có học (yyyy-mm-dd)
   P.wrong = P.wrong || {}; // courseId -> [chỉ số câu từng trả lời sai] (cho Ôn tập thông minh)
   P.mock = P.mock || {};   // scope -> điểm % thi thử tốt nhất
+  P.notes = P.notes || {}; // lessonId -> ghi chú cá nhân
+  P.activity = P.activity || {}; // yyyy-mm-dd -> số hoạt động (bài/quiz) trong ngày
   saveP();
 }
 function saveP() { if (CURRENT) saveJSON(progressKey(CURRENT), P); }
@@ -52,6 +54,14 @@ function dayKey(d = new Date()) {
 function markStudyDay() {
   const d = dayKey();
   if (!P.days.includes(d)) P.days.push(d);
+}
+function bumpActivity() { // đếm hoạt động trong ngày cho đồ thị tiến độ
+  const d = dayKey();
+  P.activity[d] = (P.activity[d] || 0) + 1;
+}
+// chuẩn hoá chuỗi: bỏ dấu tiếng Việt + chữ thường (cho tìm kiếm không dấu)
+function normalize(s) {
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d");
 }
 function streak() {
   const set = new Set(P.days);
@@ -304,7 +314,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.2.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.3.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
@@ -360,6 +370,7 @@ function renderChrome(tab) {
     <div class="appbar-in">
       <a class="avatar" href="#/profile">${esc((u.name || "?")[0].toUpperCase())}</a>
       <a class="appbar-name" href="#/profile"><small>CLAUDE ACADEMY</small><b>${esc(u.name)}</b></a>
+      <a class="music-btn" href="#/search" title="Tìm kiếm" aria-label="Tìm kiếm">🔍</a>
       <button class="music-btn ${FX.music ? "" : "off"}" id="musicBtn" title="Nhạc nền học tập">🎵</button>
       <a class="streak-chip" href="#/streaks">🔥 ${streak()}</a>
     </div>`;
@@ -594,6 +605,15 @@ function renderStreaks() {
     const lit = daySet.has(dayKey(d));
     week += `<div class="day-dot ${lit ? "lit" : ""}"><i>${lit ? "🔥" : "·"}</i>${labels[d.getDay()]}</div>`;
   }
+  // đồ thị hoạt động 7 ngày
+  const acts = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); acts.push({ n: P.activity[dayKey(d)] || 0, lb: labels[d.getDay()] }); }
+  const maxAct = Math.max(1, ...acts.map(a => a.n));
+  const chart = acts.map(a => {
+    const h = a.n ? Math.max(12, Math.round(a.n / maxAct * 76)) : 4;
+    return `<div class="bar-col"><span class="bar-n">${a.n || ""}</span><div class="bar-fill" style="height:${h}px"></div><span class="bar-lb">${a.lb}</span></div>`;
+  }).join("");
+  const weekTotal = acts.reduce((s, a) => s + a.n, 0);
   const fullCourses = COURSES.filter(c => courseProgress(c).pct === 100).length;
   const badges = [
     ["🌱", "Khởi đầu", t.doneLessons >= 1],
@@ -617,7 +637,9 @@ function renderStreaks() {
       <div class="stat-card clay pop" style="--d:.14s"><b>${t.quizDone}/${COURSES.length}</b><span>quiz đã làm</span></div>
       <div class="stat-card clay pop" style="--d:.18s"><b>${t.quizAvg}%</b><span>điểm quiz trung bình</span></div>
     </div>
-    <h2 class="sec-title pop" style="--d:.2s">Huy hiệu</h2>
+    <h2 class="sec-title pop" style="--d:.2s">Hoạt động 7 ngày <small>${weekTotal} lượt</small></h2>
+    <div class="chart clay pop" style="--d:.22s">${chart}</div>
+    <h2 class="sec-title pop" style="--d:.24s">Huy hiệu</h2>
     <div class="badge-grid">
       ${badges.map(([e, n, ok], i) => `<div class="badge clay pop ${ok ? "" : "locked"}" style="--d:${.22 + i * .04}s"><span class="be">${e}</span><b>${n}</b></div>`).join("")}
     </div>
@@ -648,7 +670,7 @@ function renderProfile() {
         <div class="cert-row clay pop" style="--d:${.08 + i * .04}s">
           <span class="ce">${ready ? "🏆" : c.emoji}</span>
           <span class="cert-main"><b>${esc(c.title)}</b><small>${pr.pct}% bài học${best != null ? ` · quiz ${best}%` : ""}</small></span>
-          <a class="cert-link ${ready ? "done" : ""}" href="${c.examUrl}" target="_blank" rel="noopener">${ready ? "Thi lấy chứng chỉ" : "Xem khoá ↗"}</a>
+          ${ready ? `<a class="cert-link done" href="#/cert/${c.id}">🏆 Chứng nhận</a>` : `<a class="cert-link" href="#/course/${c.id}">Xem khoá ›</a>`}
         </div>`;
       }).join("")}
     </div>
@@ -659,6 +681,17 @@ function renderProfile() {
       <button class="btn pressable" id="hapticTg">${FX.haptic ? "📳 Rung phản hồi: BẬT" : "📴 Rung phản hồi: TẮT"}</button>
     </div>
     <p class="foot-note" style="text-align:left;padding:8px 4px 0">🎵 Nhạc lo-fi êm tự sinh trong app, không lời — tự tắt khi nghe bài giảng hoặc xem video, đọc xong tự bật lại. Bật/tắt nhanh bằng nút 🎵 trên thanh trên cùng.</p>
+    <div class="fs-control clay pop" style="margin-top:12px">
+      <span>🔤 Cỡ chữ bài học</span>
+      <div class="fs-btns">
+        <button class="${fontScale==='sm'?'on':''}" data-fs="sm">A</button>
+        <button class="${fontScale==='md'?'on':''}" data-fs="md">A</button>
+        <button class="${fontScale==='lg'?'on':''}" data-fs="lg">A</button>
+        <button class="${fontScale==='xl'?'on':''}" data-fs="xl">A</button>
+      </div>
+    </div>
+    <button class="btn pressable" id="reminderBtn" style="margin-top:12px">${P.reminder ? "🔔 Nhắc học mỗi ngày: BẬT" : "🔕 Nhắc học mỗi ngày: TẮT"}</button>
+    <p class="foot-note" style="text-align:left;padding:6px 4px 0">🔔 Khi bật, app sẽ nhắc bạn học nếu hôm nay chưa học (hiển thị khi bạn mở app — trình duyệt không cho hẹn giờ nền cố định).</p>
     <div class="action-stack" style="margin-top:12px">
       <button class="btn pressable" id="themeBtn">🌓 Đổi giao diện sáng/tối</button>
       <button class="btn btn-ghost pressable" id="logoutBtn">Đăng xuất</button>
@@ -693,6 +726,14 @@ function renderProfile() {
     setFX("haptic", !FX.haptic);
     if (FX.haptic) vibrate([15, 40, 15]); // rung thử ngay khi bật
     renderProfile();
+  };
+  app.querySelectorAll("[data-fs]").forEach(btn => btn.onclick = () => { setFontScale(btn.dataset.fs); renderProfile(); });
+  document.getElementById("reminderBtn").onclick = async () => {
+    if (!P.reminder) {
+      if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch {} }
+      P.reminder = true;
+    } else P.reminder = false;
+    saveP(); renderProfile();
   };
   document.getElementById("themeBtn").onclick = () => {
     const dark = document.documentElement.classList.toggle("dark");
@@ -806,11 +847,27 @@ function renderLesson(cid, idx) {
       <h3>🎯 Điểm cần nhớ</h3>
       <ul>${l.takeaways.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
     </div>
+    <div class="note-card clay">
+      <label for="noteArea">📝 Ghi chú của bạn <small id="noteSaved"></small></label>
+      <textarea id="noteArea" placeholder="Ghi lại ý quan trọng, câu hỏi, hoặc liên hệ thực tế của riêng bạn…">${esc(P.notes[l.id] || "")}</textarea>
+    </div>
     <div class="action-stack">
       <button class="btn btn-primary pressable" id="doneBtn">${P.done[l.id] ? "✓ Đã hoàn thành" : "Hoàn thành bài học ✓"}</button>
       <button class="btn pressable" id="nextBtn">${next ? "Bài tiếp theo →" : "Làm quiz của khoá →"}</button>
     </div>
   </div>`;
+
+  const noteArea = document.getElementById("noteArea");
+  let noteT = null;
+  noteArea.oninput = () => {
+    clearTimeout(noteT);
+    noteT = setTimeout(() => {
+      const v = noteArea.value.trim();
+      if (v) P.notes[l.id] = v; else delete P.notes[l.id];
+      saveP();
+      const s = document.getElementById("noteSaved"); if (s) { s.textContent = "đã lưu ✓"; setTimeout(() => { if (s) s.textContent = ""; }, 1500); }
+    }, 500);
+  };
 
   const playBtn = document.getElementById("playBtn");
   const supported = "speechSynthesis" in window;
@@ -825,7 +882,7 @@ function renderLesson(cid, idx) {
   const advance = () => { if (next) go(`#/lesson/${c.id}/${idx + 1}`); else go(`#/quiz/${c.id}`); };
   document.getElementById("doneBtn").onclick = () => {
     if (!P.done[l.id]) {
-      P.done[l.id] = true; markStudyDay(); saveP();
+      P.done[l.id] = true; markStudyDay(); bumpActivity(); saveP();
       sfx("done"); confetti();
       setTimeout(advance, 650);
     } else advance();
@@ -885,7 +942,7 @@ function renderQuiz(cid) {
   function finish() {
     const pct = Math.round(score / c.quiz.length * 100);
     if (P.quiz[c.id] == null || pct > P.quiz[c.id]) P.quiz[c.id] = pct;
-    markStudyDay(); saveP(); sfx("done");
+    markStudyDay(); bumpActivity(); saveP(); sfx("done");
     const passed = pct >= 80;
     if (passed) confetti();
     app.innerHTML = `
@@ -978,6 +1035,119 @@ function renderInstall() {
     deferredPrompt = null;
     go("#/");
   };
+}
+
+// ───────────────────────── Tìm kiếm ─────────────────────────
+let searchIndex = null;
+function buildSearchIndex() {
+  if (searchIndex) return searchIndex;
+  searchIndex = [];
+  for (const c of COURSES) c.lessons.forEach((l, i) => {
+    const parts = [c.title, l.title];
+    l.sections.forEach(s => { if (s.h) parts.push(s.h); (s.p || []).forEach(p => parts.push(p)); (s.list || []).forEach(x => parts.push(x)); });
+    (l.takeaways || []).forEach(t => parts.push(t));
+    searchIndex.push({ c, i, l, hay: normalize(parts.join(" ")) });
+  });
+  return searchIndex;
+}
+function renderSearch() {
+  TTS.stop(); renderChrome(null);
+  app.innerHTML = `
+  <div class="screen">
+    ${backRow("#/", "Trang chủ")}
+    <div class="search-box clay pop">
+      <span>🔍</span>
+      <input id="searchInput" type="search" placeholder="Tìm bài học, chủ đề… (vd: hooks, excel, prompt)" autocomplete="off" autofocus>
+    </div>
+    <div id="searchResults"></div>
+  </div>`;
+  const input = document.getElementById("searchInput");
+  const box = document.getElementById("searchResults");
+  const run = () => {
+    const q = normalize(input.value.trim());
+    if (q.length < 2) { box.innerHTML = `<p class="foot-note" style="text-align:left;padding:14px 4px">Gõ ít nhất 2 ký tự để tìm trong ${COURSES.reduce((n,c)=>n+c.lessons.length,0)} bài học.</p>`; return; }
+    const hits = buildSearchIndex().filter(x => x.hay.includes(q)).slice(0, 30);
+    if (!hits.length) { box.innerHTML = `<p class="foot-note" style="text-align:left;padding:14px 4px">Không tìm thấy «${esc(input.value.trim())}». Thử từ khoá khác nhé.</p>`; return; }
+    box.innerHTML = `<p class="ph-meta pop" style="margin:8px 2px">${hits.length} kết quả</p>` + hits.map((x, k) => `
+      <a class="lesson-row clay pressable pop ${P.done[x.l.id] ? "done" : ""}" style="--cc:${x.c.color};--d:${Math.min(k*.03,.4)}s" href="#/lesson/${x.c.id}/${x.i}">
+        <span class="lr-num">${P.done[x.l.id] ? "✓" : "📖"}</span>
+        <span class="lr-main"><b>${esc(x.l.title)}</b><small>${esc(x.c.emoji + " " + x.c.title)}</small></span>
+        <span class="lr-go">›</span>
+      </a>`).join("");
+  };
+  input.oninput = run; run();
+}
+
+// ───────────────────────── Chứng nhận hoàn thành ─────────────────────────
+function courseDone(c) {
+  const pr = courseProgress(c);
+  return pr.pct === 100 && P.quiz[c.id] != null && P.quiz[c.id] >= 80;
+}
+function renderCert(cid) {
+  TTS.stop(); renderChrome("profile");
+  const c = findCourse(cid); if (!c) return renderProfile();
+  const u = user();
+  const date = new Date().toLocaleDateString("vi-VN");
+  const eligible = courseDone(c);
+  app.innerHTML = `
+  <div class="screen">
+    ${backRow("#/profile", "Hồ sơ")}
+    ${eligible ? `
+    <div class="certificate clay pop" id="certCard">
+      <div class="cert-deco">🎓</div>
+      <small>CHỨNG NHẬN HOÀN THÀNH</small>
+      <h2>${esc(c.title)}</h2>
+      <p class="cert-name">${esc(u.name)}</p>
+      <p class="cert-sub">đã hoàn thành toàn bộ bài học và đạt ${P.quiz[c.id]}% bài kiểm tra</p>
+      <div class="cert-foot"><span>Claude Academy VN</span><span>${date}</span></div>
+    </div>
+    <div class="action-stack">
+      <button class="btn btn-primary pressable" id="dlCert">⬇️ Tải ảnh chứng nhận</button>
+      <a class="btn btn-gold pressable" href="${c.examUrl}" target="_blank" rel="noopener">🎓 Thi lấy chứng chỉ chính thức ↗</a>
+    </div>
+    <p class="foot-note">Đây là chứng nhận nội bộ của Claude Academy VN để ghi nhận nỗ lực học tập. Chứng chỉ chính thức do Anthropic cấp tại anthropic.skilljar.com.</p>
+    ` : `
+    <div class="result-hero clay shimmer pop">
+      <span class="big-emoji">🔒</span>
+      <h1>Chưa mở khoá chứng nhận</h1>
+      <p>Hoàn thành tất cả bài học của «${esc(c.title)}» và đạt quiz từ 80% để nhận chứng nhận hoàn thành.</p>
+    </div>
+    <a class="btn btn-primary pressable" href="#/course/${c.id}" style="margin-top:14px">Tiếp tục học khoá này</a>`}
+  </div>`;
+  const dl = document.getElementById("dlCert");
+  if (dl) dl.onclick = () => downloadCertificate(c, u.name, date);
+}
+function downloadCertificate(c, name, date) {
+  const W = 1200, H = 800, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+  // nền
+  x.fillStyle = "#efeafb"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#ffffff"; roundRect(x, 50, 50, W - 100, H - 100, 32); x.fill();
+  x.lineWidth = 8; x.strokeStyle = c.color || "#7c3aed"; roundRect(x, 50, 50, W - 100, H - 100, 32); x.stroke();
+  x.textAlign = "center";
+  x.fillStyle = c.color || "#7c3aed"; x.font = "120px serif"; x.fillText("🎓", W / 2, 230);
+  x.fillStyle = "#7a7295"; x.font = "bold 30px system-ui,sans-serif"; x.fillText("CHỨNG NHẬN HOÀN THÀNH", W / 2, 300);
+  x.fillStyle = "#2a2440"; x.font = "bold 56px system-ui,sans-serif"; wrapText(x, c.title, W / 2, 380, W - 220, 60);
+  x.fillStyle = "#7c3aed"; x.font = "italic bold 64px Georgia,serif"; x.fillText(name, W / 2, 520);
+  x.fillStyle = "#2a2440"; x.font = "28px system-ui,sans-serif";
+  x.fillText(`đã hoàn thành toàn bộ bài học · đạt ${P.quiz[c.id]}% bài kiểm tra`, W / 2, 580);
+  x.fillStyle = "#7a7295"; x.font = "26px system-ui,sans-serif";
+  x.textAlign = "left"; x.fillText("Claude Academy VN", 110, H - 110);
+  x.textAlign = "right"; x.fillText(date, W - 110, H - 110);
+  cv.toBlob(blob => {
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = `ChungNhan-${normalize(c.title).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    sfx("done");
+  });
+}
+function roundRect(x, rx, ry, w, h, r) { x.beginPath(); x.moveTo(rx + r, ry); x.arcTo(rx + w, ry, rx + w, ry + h, r); x.arcTo(rx + w, ry + h, rx, ry + h, r); x.arcTo(rx, ry + h, rx, ry, r); x.arcTo(rx, ry, rx + w, ry, r); x.closePath(); }
+function wrapText(ctx, text, cx, cy, maxW, lh) {
+  const words = text.split(" "); let line = "", y = cy;
+  for (const w of words) { const test = line + w + " "; if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line.trim(), cx, y); line = w + " "; y += lh; } else line = test; }
+  ctx.fillText(line.trim(), cx, y);
 }
 
 // ───────────────────────── Thi thử (Mock Exam) ─────────────────────────
@@ -1079,7 +1249,7 @@ function renderMock(scope) {
     const pct = Math.round(score / total * 100);
     const pass = pct >= 80;
     if (P.mock[scope] == null || pct > P.mock[scope]) P.mock[scope] = pct;
-    markStudyDay(); saveP(); sfx("done");
+    markStudyDay(); bumpActivity(); saveP(); sfx("done");
     if (pass) confetti();
     app.innerHTML = `
     <div class="screen">
@@ -1170,7 +1340,7 @@ function renderReview() {
     });
   }
   function finish() {
-    markStudyDay(); saveP(); sfx("done");
+    markStudyDay(); bumpActivity(); saveP(); sfx("done");
     const left = reviewItems().length;
     if (!left) confetti();
     app.innerHTML = `
@@ -1219,7 +1389,7 @@ function renderCards(cid) {
     </div>`;
     const advance = () => {
       if (i + 1 < cards.length) { i++; flipped = false; draw(); }
-      else { markStudyDay(); saveP(); sfx("done"); confetti(); setTimeout(() => go(`#/course/${c.id}`), 650); }
+      else { markStudyDay(); bumpActivity(); saveP(); sfx("done"); confetti(); setTimeout(() => go(`#/course/${c.id}`), 650); }
     };
     document.getElementById("fc").onclick = () => { flipped = !flipped; document.getElementById("fc").classList.toggle("flipped"); };
     document.getElementById("speakBtn").onclick = () => TTS.speak(flipped ? card.back : card.front);
@@ -1230,8 +1400,29 @@ function renderCards(cid) {
   draw();
 }
 
-// ───────────────────────── Giao diện sáng/tối ─────────────────────────
+// ───────────────────────── Giao diện sáng/tối + cỡ chữ ─────────────────────────
 if (localStorage.getItem("ca-theme") === "dark") document.documentElement.classList.add("dark");
+let fontScale = localStorage.getItem("ca-fontscale") || "md";
+function applyFontScale() {
+  document.documentElement.classList.remove("fs-sm", "fs-md", "fs-lg", "fs-xl");
+  document.documentElement.classList.add("fs-" + fontScale);
+}
+function setFontScale(v) { fontScale = v; localStorage.setItem("ca-fontscale", v); applyFontScale(); }
+applyFontScale();
+
+// ───────────────────────── Nhắc học hằng ngày ─────────────────────────
+function maybeRemind() {
+  if (!P || !P.reminder) return;
+  if (P.days.includes(dayKey())) return; // hôm nay đã học rồi
+  const last = localStorage.getItem("ca-remind-shown:" + CURRENT);
+  if (last === dayKey()) return; // chỉ nhắc 1 lần/ngày
+  localStorage.setItem("ca-remind-shown:" + CURRENT, dayKey());
+  const msg = streak() > 0 ? `Giữ chuỗi 🔥 ${streak()} ngày — học một bài hôm nay nhé!` : "Đến giờ học Claude rồi! Chỉ cần một bài thôi 💪";
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { new Notification("Claude Academy", { body: msg, icon: "./icons/icon-192.png" }); } catch {}
+  }
+  setTimeout(() => toast("🔔 " + msg), 1200);
+}
 
 // ───────────────────────── Router ─────────────────────────
 function route() {
@@ -1248,6 +1439,8 @@ function route() {
   else if (page === "cards" && a) renderCards(a);
   else if (page === "review") renderReview();
   else if (page === "mock") { a ? renderMock(a) : renderMockSetup(); }
+  else if (page === "search") renderSearch();
+  else if (page === "cert" && a) renderCert(a);
   else if (page === "install") renderInstall();
   else if (page === "explore") renderExplore();
   else if (page === "streaks") renderStreaks();
@@ -1256,6 +1449,7 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 route();
+maybeRemind(); // nhắc học nếu hôm nay chưa học (khi đã bật & đã đăng nhập)
 
 // ───────────────────────── Phản hồi chạm toàn cục ─────────────────────────
 // Mọi nút, link, menu khi chạm đều rung nhẹ + tiếng "tách" tức thì.
