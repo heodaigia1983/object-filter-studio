@@ -26,6 +26,7 @@ function loadUserProgress() {
   P.mock = P.mock || {};   // scope -> điểm % thi thử tốt nhất
   P.notes = P.notes || {}; // lessonId -> ghi chú cá nhân
   P.activity = P.activity || {}; // yyyy-mm-dd -> số hoạt động (bài/quiz) trong ngày
+  P.srs = P.srs || {}; // "courseId:idx" -> { ease, interval, due, reps } cho ôn tập ngắt quãng
   saveP();
 }
 function saveP() { if (CURRENT) saveJSON(progressKey(CURRENT), P); }
@@ -314,7 +315,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.3.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.4.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
@@ -475,6 +476,17 @@ function renderHome() {
       </div>
       <span class="lr-go">›</span>
     </a>` : ""}
+    ${(() => { const due = srsDue().length; return due ? `
+    <h2 class="sec-title pop" style="--d:.115s">Ôn tập ngắt quãng <small>nhớ lâu</small></h2>
+    <a class="course-card clay shimmer pressable pop" style="--cc:#0d9488;--d:.12s" href="#/srs">
+      <div class="cc-icon">🔁</div>
+      <div class="cc-main">
+        <div class="cc-tag">Spaced repetition</div>
+        <h3>${due} thẻ đến hạn ôn hôm nay</h3>
+        <p>Ôn đúng lúc sắp quên — cách khoa học nhất để nhớ lâu cho kỳ thi.</p>
+      </div>
+      <span class="lr-go">›</span>
+    </a>` : ""; })()}
     ${reviewItems().length ? `
     <h2 class="sec-title pop" style="--d:.13s">Ôn tập thông minh <small>cá nhân hoá</small></h2>
     <a class="course-card clay shimmer pressable pop" style="--cc:#f5841f;--d:.14s" href="#/review">
@@ -710,7 +722,13 @@ function renderProfile() {
       <button class="btn btn-primary pressable" id="installBtn">📲 Cài đặt / Hướng dẫn cài</button>
       <button class="btn pressable" id="updateBtn">🔄 Kiểm tra cập nhật</button>
     </div>
-    <p class="foot-note">Tiến độ được lưu theo email trên thiết bị này — lần sau đăng nhập đúng email là học tiếp.</p>
+    <h2 class="sec-title pop">Sao lưu tiến độ</h2>
+    <div class="action-stack">
+      <button class="btn pressable" id="backupBtn">⬇️ Tải tệp sao lưu</button>
+      <button class="btn pressable" id="restoreBtn">⬆️ Khôi phục từ tệp</button>
+      <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="foot-note" style="text-align:left;padding:8px 4px 0">Tiến độ lưu theo email trên máy này. Muốn chuyển sang máy/điện thoại khác: tải tệp sao lưu rồi khôi phục ở thiết bị mới.</p>
   </div>`;
   document.getElementById("musicTg").onclick = () => {
     setFX("music", !FX.music);
@@ -742,6 +760,31 @@ function renderProfile() {
   document.getElementById("logoutBtn").onclick = () => { logout(); renderLogin(); };
   document.getElementById("installBtn").onclick = () => go("#/install");
   document.getElementById("updateBtn").onclick = () => checkForUpdate(true);
+  document.getElementById("backupBtn").onclick = () => {
+    const data = { app: "claude-academy", v: APP_VERSION, exportedAt: new Date().toISOString(), user: user(), progress: P };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = `ClaudeAcademy-saoluu-${dayKey()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000); toast("Đã tải tệp sao lưu ✓");
+  };
+  const rf = document.getElementById("restoreFile");
+  document.getElementById("restoreBtn").onclick = () => rf.click();
+  rf.onchange = () => {
+    const f = rf.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const d = JSON.parse(reader.result);
+        if (d.app !== "claude-academy" || !d.progress) throw new Error("sai định dạng");
+        if (!confirm("Khôi phục sẽ ghi đè tiến độ hiện tại trên máy này. Tiếp tục?")) return;
+        if (d.user && d.user.email) { USERS[d.user.email] = { name: d.user.name, created: d.user.created || Date.now() }; saveJSON("ca-users", USERS); CURRENT = d.user.email; localStorage.setItem("ca-current", CURRENT); }
+        P = d.progress; saveP();
+        toast("Khôi phục thành công ✓"); setTimeout(() => { route(); }, 700);
+      } catch (e) { toast("Tệp không hợp lệ ❌"); }
+    };
+    reader.readAsText(f);
+  };
 }
 
 // ───────────────────────── Trang khoá học ─────────────────────────
@@ -1362,6 +1405,96 @@ function renderReview() {
   draw();
 }
 
+// ───────────────────────── Ôn tập ngắt quãng (Spaced Repetition / SM-2) ─────────────────────────
+const DAY = 86400000;
+function allCards() {
+  const out = [];
+  for (const c of COURSES) c.cards.forEach((card, idx) => out.push({ c, idx, card, key: c.id + ":" + idx }));
+  return out;
+}
+function srsDue(limitNew = 12) {
+  const now = Date.now();
+  const due = [], fresh = [];
+  for (const it of allCards()) {
+    const s = P.srs[it.key];
+    if (!s) fresh.push(it);
+    else if (s.due <= now) due.push(it);
+  }
+  return due.concat(fresh.slice(0, limitNew)); // thẻ đến hạn + một ít thẻ mới
+}
+function srsRate(key, grade) {
+  // grade: 0 = Khó (lại), 1 = Được, 2 = Dễ
+  const s = P.srs[key] || { ease: 2.5, interval: 0, due: 0, reps: 0 };
+  if (grade === 0) { s.reps = 0; s.interval = 0; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now(); }
+  else {
+    if (grade === 2) s.ease += 0.15;
+    s.interval = s.reps === 0 ? (grade === 2 ? 2 : 1) : s.reps === 1 ? (grade === 2 ? 5 : 3) : Math.round(s.interval * s.ease * (grade === 2 ? 1.3 : 1));
+    s.reps++; s.due = Date.now() + s.interval * DAY;
+  }
+  P.srs[key] = s; saveP();
+  return s;
+}
+function renderSRS() {
+  TTS.stop(); renderChrome("home");
+  const queue = srsDue().sort(() => Math.random() - .5);
+  if (!queue.length) {
+    app.innerHTML = `
+    <div class="screen">${backRow("#/", "Trang chủ")}
+      <div class="result-hero clay shimmer pop"><span class="big-emoji">✅</span>
+        <h1>Hết thẻ đến hạn!</h1>
+        <p>Bạn đã ôn xong tất cả thẻ cần ôn hôm nay. Thuật toán sẽ tự hẹn ngày ôn lại để bạn nhớ lâu nhất. Quay lại sau nhé!</p>
+      </div>
+      <div class="action-stack" style="margin-top:14px">
+        <a class="btn btn-primary pressable" href="#/">Về trang chủ</a>
+        <a class="btn pressable" href="#/mock">📝 Thi thử</a>
+      </div>
+    </div>`;
+    return;
+  }
+  let flipped = false, doneCount = 0; const startN = queue.length;
+  function draw() {
+    if (!queue.length) { markStudyDay(); bumpActivity(); saveP(); sfx("done"); confetti();
+      app.innerHTML = `<div class="screen">${backRow("#/", "Trang chủ")}
+        <div class="result-hero clay shimmer pop"><span class="big-emoji">🎉</span>
+        <h1>Đã ôn ${doneCount} thẻ!</h1><p>Tuyệt vời! Các thẻ khó sẽ sớm quay lại, thẻ dễ được hẹn xa hơn — đúng cách để nhớ lâu.</p></div>
+        <a class="btn btn-primary pressable" href="#/" style="margin-top:14px">Hoàn tất ✓</a></div>`;
+      return;
+    }
+    const it = queue[0];
+    const isNew = !P.srs[it.key];
+    app.innerHTML = `
+    <div class="screen" style="--cc:${it.c.color}">
+      ${backRow("#/", "Ôn tập ngắt quãng")}
+      <div class="cc-bar pop"><div class="track"><i style="width:${Math.round(doneCount / (doneCount + queue.length) * 100)}%"></i></div><small>còn ${queue.length} thẻ</small></div>
+      <div class="hero-meta pop" style="justify-content:flex-start;margin-top:8px"><span class="chip vio">${it.c.emoji} ${esc(it.c.title)}</span>${isNew ? '<span class="chip">thẻ mới</span>' : ''}</div>
+      <div class="fc-stage pop ${flipped ? "flipped" : ""}" id="fc" style="--d:.05s">
+        <div class="fc-inner">
+          <div class="fc-face"><small>CÂU HỎI · CHẠM ĐỂ LẬT</small><p>${esc(it.card.front)}</p></div>
+          <div class="fc-face back"><small>TRẢ LỜI</small><p>${esc(it.card.back)}</p></div>
+        </div>
+      </div>
+      ${flipped ? `
+      <p class="ph-meta pop" style="text-align:center;margin-top:14px">Bạn nhớ thẻ này thế nào?</p>
+      <div class="srs-rate">
+        <button class="srs-btn hard" data-g="0">😓 Khó<small>~1 phút</small></button>
+        <button class="srs-btn ok" data-g="1">🙂 Được<small id="sg1"></small></button>
+        <button class="srs-btn easy" data-g="2">😎 Dễ<small id="sg2"></small></button>
+      </div>` : `<button class="btn btn-primary pressable" id="flipBtn" style="margin-top:16px">Lật thẻ xem đáp án</button>`}
+    </div>`;
+    document.getElementById("fc").onclick = () => { flipped = true; draw(); };
+    const fb = document.getElementById("flipBtn"); if (fb) fb.onclick = () => { flipped = true; draw(); };
+    app.querySelectorAll(".srs-btn").forEach(btn => btn.onclick = () => {
+      const g = +btn.dataset.g;
+      srsRate(it.key, g);
+      queue.shift();
+      if (g === 0) queue.splice(Math.min(3, queue.length), 0, it); // thẻ "Khó" quay lại sớm trong phiên
+      else doneCount++;
+      flipped = false; sfx(g === 0 ? "wrong" : "correct"); draw();
+    });
+  }
+  draw();
+}
+
 // ───────────────────────── Flashcards ─────────────────────────
 function renderCards(cid) {
   TTS.stop(); renderChrome("home");
@@ -1438,6 +1571,7 @@ function route() {
   else if (page === "quiz" && a) renderQuiz(a);
   else if (page === "cards" && a) renderCards(a);
   else if (page === "review") renderReview();
+  else if (page === "srs") renderSRS();
   else if (page === "mock") { a ? renderMock(a) : renderMockSetup(); }
   else if (page === "search") renderSearch();
   else if (page === "cert" && a) renderCert(a);
