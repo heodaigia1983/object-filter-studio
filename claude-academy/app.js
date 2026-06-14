@@ -239,25 +239,39 @@ const MUSIC = {
     master.connect(lp); lp.connect(ctx.destination);
     lp.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(ctx.destination);
     this.master = master;
-    // Vòng hợp âm lo-fi I–vi–IV–V (Đô trưởng): [bass, các nốt hợp âm...]
-    const bars = [
-      [65.41, [130.81, 164.81, 196.00, 246.94]], // Cmaj7
-      [55.00, [110.00, 130.81, 164.81, 196.00]], // Am7
-      [43.65, [87.31, 110.00, 130.81, 164.81]],  // Fmaj7
-      [49.00, [98.00, 123.47, 146.83, 174.61]]   // G7
+    // Cao độ các nốt (Hz)
+    const N = { C2:65.41,G2:98.00,A2:110.00,F2:87.31,
+      C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196.00,A3:220.00,B3:246.94,
+      C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,
+      C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00 };
+    // Vòng hợp âm du dương C–G–Am–F (8 ô nhịp), mỗi ô: [bass, các nốt hợp âm]
+    const chords = [
+      [N.C2,[N.C3,N.E3,N.G3]], [N.G2,[N.D3,N.G3,N.B3]], [N.A2,[N.C3,N.E3,N.A3]], [N.F2,[N.C3,N.F3,N.A3]],
+      [N.C2,[N.C3,N.E3,N.G3]], [N.G2,[N.D3,N.G3,N.B3]], [N.A2,[N.C3,N.E3,N.A3]], [N.F2,[N.C3,N.F3,N.A3]]
     ];
-    const penta = [523.25, 587.33, 659.25, 783.99, 880.00]; // giai điệu ngẫu nhiên
-    const BAR = 3.4;
+    // Giai điệu gốc tự soạn (không vướng bản quyền). Mỗi nốt: [cao độ, số phách]
+    const melody = [
+      [[N.E4,1],[N.G4,1],[N.C5,1.5],[N.B4,.5]],
+      [[N.D5,1],[N.B4,1],[N.G4,2]],
+      [[N.C5,1],[N.E5,1],[N.D5,1.5],[N.C5,.5]],
+      [[N.A4,1],[N.C5,1],[N.F4,2]],
+      [[N.G4,1],[N.E4,1],[N.G4,1],[N.A4,1]],
+      [[N.B4,2],[N.D5,2]],
+      [[N.E5,1.5],[N.D5,.5],[N.C5,1],[N.A4,1]],
+      [[N.F4,1],[N.A4,1],[N.C5,3]]
+    ];
+    const BEAT = 0.82, BAR = BEAT * 4; // ~73 nhịp/phút, êm dịu
     let bi = 0;
     const playBar = () => {
       if (gen !== this._gen) return;
       const t = ctx.currentTime + 0.05;
-      const [bass, notes] = bars[bi % bars.length];
-      this._note(ctx, master, bass, t, BAR * 0.95, 0.18);           // nốt trầm giữ nhịp
-      notes.forEach((f, k) => this._note(ctx, master, f, t + 0.14 + k * 0.16, BAR * 0.8, 0.12)); // rải hợp âm
-      if (Math.random() < 0.6) {                                     // thỉnh thoảng điểm một nốt giai điệu
-        const f = penta[Math.floor(Math.random() * penta.length)];
-        this._note(ctx, master, f, t + 0.8 + Math.random() * 1.4, 1.8, 0.10);
+      const [bass, tones] = chords[bi % chords.length];
+      this._note(ctx, master, bass, t, BAR * 0.96, 0.16);                                  // bass giữ nhịp
+      tones.forEach((f, k) => this._note(ctx, master, f, t + k * 0.13, BAR * 0.9, 0.07));   // đệm hợp âm nhẹ
+      let beat = 0;                                                                         // GIAI ĐIỆU nổi lên trên
+      for (const [f, dur] of melody[bi % melody.length]) {
+        this._note(ctx, master, f, t + beat * BEAT, dur * BEAT * 0.95, 0.17);
+        beat += dur;
       }
       bi++;
       this._chordT = setTimeout(playBar, BAR * 1000);
@@ -315,7 +329,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.5.1"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.6.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
