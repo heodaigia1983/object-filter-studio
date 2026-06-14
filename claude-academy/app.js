@@ -315,7 +315,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.5.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.5.1"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
