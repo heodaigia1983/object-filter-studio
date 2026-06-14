@@ -1,5 +1,5 @@
 // Service worker — cho phép học offline sau lần mở đầu tiên
-const CACHE = "claude-academy-v8";
+const CACHE = "claude-academy-v9";
 const ASSETS = [
   "./",
   "./index.html",
@@ -16,7 +16,9 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // KHÔNG skipWaiting tự động: bản mới «chờ» để app hiện banner cho người học chủ động cập nhật.
+  // cache:"reload" buộc tải mới hoàn toàn từ máy chủ (bỏ qua HTTP cache cũ) để bản cập nhật thật sự mới.
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: "reload" })))));
 });
 
 self.addEventListener("activate", e => {
@@ -25,6 +27,11 @@ self.addEventListener("activate", e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+// App gửi lệnh khi người học bấm «Cập nhật ngay» → kích hoạt bản mới
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 // Cache-first, cập nhật ngầm từ mạng khi có.
