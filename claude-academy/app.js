@@ -329,7 +329,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.8.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.9.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // Tài nguyên của tác giả (playlist video + thư mục tài liệu Drive)
 const AUTHOR_PLAYLIST = "PLZDO3QBqL6cKq07P5sVfay2Ih6GXslCDb";
@@ -357,6 +357,26 @@ const AUTHOR_VIDEOS = [
     ["Chế độ Research — Đào sâu", "4:35"], ["Từ Họp Hành đến Hành Động — Connectors", "6:43"] ] },
   { group: "Sự nghiệp & ứng dụng nâng cao", course: "tc-career", items: [
     ["AI + Sự nghiệp: Vượt xa CV", "4:57"], ["AI Agentic 2026", "5:20"], ["Trò chuyện Claude chuyên nghiệp", "6:17"] ] }
+];
+// Tài liệu PDF trong thư mục Drive, phân nhóm theo chủ đề khớp từng khoá (đọc từ ảnh thư mục)
+const AUTHOR_DOCS = [
+  { group: "Nền tảng & Tư duy AI (Khung 4D)", course: "ai-fluency", items: [
+    "The_Claude_Blueprint.pdf", "Decoding_AI.pdf", "Claude_Fluency_Roadmap.pdf", "The_4D_AI_Blueprint.pdf",
+    "4D_AI_Fluency_Blueprint.pdf", "AI_Fluency_4D.pdf", "Strategic_AI_Fluency.pdf", "Nonprofit_AI_Fluency.pdf" ] },
+  { group: "Prompt & Giao việc", course: "tc-writing", items: [
+    "Prompting_Mastery.pdf", "From_Chat_to_Delegation.pdf" ] },
+  { group: "Claude Code & Engineering", course: "claude-code", items: [
+    "Mastering_Claude_Code.pdf", "Claude_Engineering_Blueprint.pdf" ] },
+  { group: "MCP & Subagents", course: "mcp", items: [
+    "MCP_The_AI_USB-C.pdf", "Advanced_MCP_Architecture.pdf", "Subagent_Architecture.pdf" ] },
+  { group: "Skills", course: "agent-skills", items: [
+    "Mastering_Agent_Skills.pdf", "Claude_Skills_Blueprint.pdf", "Modular_Skills_and_Research.pdf" ] },
+  { group: "Cowork & Tự động hoá", course: "tc-cowork", items: [
+    "Mastering_Claude_Cowork.pdf", "Architecting_AI_Workspaces.pdf", "AI_Automation_Mastery.pdf" ] },
+  { group: "Thiết kế với Claude", course: "tc-office", items: [
+    "Claude_Design_Mastery.pdf" ] },
+  { group: "Agentic & nâng cao", course: "tc-career", items: [
+    "Mastering_Agentic_AI.pdf" ] }
 ];
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
@@ -1171,13 +1191,26 @@ function renderLibrary() {
     }).join("")}
     <p class="foot-note" style="text-align:left;padding:6px 4px 10px">▶️ Mở trình phát playlist ở trên để xem các video này. Muốn em gắn đúng từng video vào từng bài học (bấm là phát ngay trong bài), anh gửi em link chia sẻ của từng video nhé.</p>
 
-    <h2 class="sec-title pop" style="--d:.12s">📄 Tài liệu PDF & video (Drive)</h2>
-    <a class="cert-row clay shimmer pressable pop" style="--d:.13s" href="${AUTHOR_DRIVE}" target="_blank" rel="noopener">
+    <h2 class="sec-title pop" style="--d:.12s">📄 Tài liệu PDF <small>${AUTHOR_DOCS.reduce((n,g)=>n+g.items.length,0)} tài liệu</small></h2>
+    <a class="cert-row clay shimmer pressable pop" style="--d:.125s" href="${AUTHOR_DRIVE}" target="_blank" rel="noopener">
       <span class="ce">📁</span>
-      <span class="cert-main"><b>Kho tài liệu Claude</b><small>PDF, video tổng hợp — mở thư mục Google Drive</small></span>
+      <span class="cert-main"><b>Mở kho tài liệu (Google Drive)</b><small>Toàn bộ PDF + video — bấm để mở thư mục</small></span>
       <span class="cert-link">Mở ↗</span>
     </a>
-    <p class="foot-note" style="text-align:left;padding:10px 4px 0">💡 Để người học mở được tài liệu, thư mục Drive cần đặt chia sẻ ở chế độ «Bất kỳ ai có đường liên kết». Nếu anh muốn lồng từng video vào đúng từng khoá học, gửi em danh sách tiêu đề + link, em sẽ gắn vào bài phù hợp.</p>
+    ${AUTHOR_DOCS.map((g, i) => {
+      const c = findCourse(g.course);
+      return `
+      <div class="vidgroup docgroup clay pop" style="--cc:${c ? c.color : "#d9734e"};--d:${.13 + i * .03}s">
+        <div class="vg-head">
+          <b>${esc(g.group)}</b>
+          ${c ? `<a class="vg-link" href="#/course/${c.id}">${c.emoji} Học khoá</a>` : ""}
+        </div>
+        <ul class="vg-list">
+          ${g.items.map(t => `<li><span>${esc(t.replace(/_/g, " ").replace(/\.pdf$/i, ""))}</span><i>PDF</i></li>`).join("")}
+        </ul>
+      </div>`;
+    }).join("")}
+    <p class="foot-note" style="text-align:left;padding:10px 4px 0">💡 Tài liệu mở trong thư mục Drive (cần đặt chia sẻ «Bất kỳ ai có đường liên kết»). Muốn em gắn nút mở thẳng từng PDF, anh gửi link chia sẻ của từng tệp nhé.</p>
   </div>`;
   const card = document.getElementById("plCard");
   if (card) card.onclick = () => {
