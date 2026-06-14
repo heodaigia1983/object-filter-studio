@@ -442,5 +442,123 @@ const ArtLib = (() => {
     txt(160, 178, "chứng chỉ chính thức — miễn phí tại anthropic.skilljar.com", { fs: 9.5 })
   );
 
+  A.rocket = wrap(
+    `<path d="M160 26 C188 50 196 92 188 124 L132 124 C124 92 132 50 160 26 Z" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<circle cx="160" cy="72" r="14" fill="${C.blue}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M132 110 L110 130 L132 124 Z M188 110 L210 130 L188 124 Z" fill="${C.terra}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M148 124 q12 26 12 40 q0 -14 12 -40 Z" fill="${C.gold}"/>` +
+    txt(160, 170, "Bắt đầu nhanh — dùng được ngay hôm nay", { fs: 10.5 })
+  );
+
+  A.spreadsheet = wrap(
+    `<rect x="44" y="28" width="232" height="124" rx="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<rect x="44" y="28" width="232" height="24" rx="10" fill="${C.green}"/>` +
+    txt(160, 45, "Doanh thu.xlsx", { fs: 11, c: "#fff", w: 700 }) +
+    [1,2,3].map(r=>`<line x1="44" y1="${52+r*25}" x2="276" y2="${52+r*25}" stroke="#C9BFAE" stroke-width="1"/>`).join("") +
+    [108,172,236].map(x=>`<line x1="${x}" y1="52" x2="${x}" y2="152" stroke="#C9BFAE" stroke-width="1"/>`).join("") +
+    txt(76, 70, "T1", { fs: 9 }) + txt(140, 70, "120", { fs: 9 }) + txt(204, 70, "=B×C", { fs: 9, c: C.green, w: 700 }) +
+    txt(76, 95, "T2", { fs: 9 }) + txt(140, 95, "150", { fs: 9 }) + txt(204, 95, "=B×C", { fs: 9, c: C.green, w: 700 }) +
+    txt(160, 172, "File Excel thật: công thức, định dạng, biểu đồ", { fs: 10 })
+  );
+
+  A.slidedeck = wrap(
+    `<rect x="70" y="30" width="180" height="104" rx="8" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<rect x="84" y="44" width="90" height="14" rx="7" fill="${C.terra}"/>` +
+    `<rect x="84" y="68" width="140" height="8" rx="4" fill="#C9BFAE"/>` +
+    `<rect x="84" y="84" width="120" height="8" rx="4" fill="#C9BFAE"/>` +
+    `<rect x="84" y="100" width="60" height="20" rx="5" fill="${C.gold}"/>` +
+    `<rect x="100" y="138" width="120" height="6" rx="3" fill="${C.ink}"/>` +
+    txt(160, 168, "Slide: mỗi trang một ý, ít chữ, nhiều hình", { fs: 10.5 })
+  );
+
+  A.palette = wrap(
+    `<path d="M160 40 C112 40 80 74 80 108 C80 130 98 138 116 134 C132 130 130 116 144 114 C160 112 162 132 178 132 C214 132 240 104 240 78 C240 54 206 40 160 40 Z" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<circle cx="120" cy="84" r="9" fill="${C.terra}"/><circle cx="150" cy="70" r="9" fill="${C.gold}"/><circle cx="186" cy="74" r="9" fill="${C.green}"/><circle cx="208" cy="98" r="9" fill="${C.purple}"/>` +
+    txt(160, 168, "Ý tưởng, bảng màu, nội dung thiết kế", { fs: 10.5 })
+  );
+
+  A.inbox = wrap(
+    `<rect x="80" y="40" width="160" height="104" rx="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M80 50 L160 100 L240 50" fill="none" stroke="${C.terra}" stroke-width="2"/>` +
+    `<circle cx="232" cy="48" r="14" fill="${C.terra}"/>` + txt(232, 53, "3", { fs: 12, c: "#fff", w: 700 }) +
+    txt(160, 170, "Tóm tắt & soạn nháp email tự động", { fs: 10.5 })
+  );
+
+  A.gauge = wrap(
+    `<path d="M70 130 A90 90 0 0 1 250 130" fill="none" stroke="#C9BFAE" stroke-width="14" stroke-linecap="round"/>` +
+    `<path d="M70 130 A90 90 0 0 1 130 58" fill="none" stroke="${C.green}" stroke-width="14" stroke-linecap="round"/>` +
+    `<line x1="160" y1="130" x2="120" y2="78" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>` +
+    `<circle cx="160" cy="130" r="8" fill="${C.ink}"/>` +
+    txt(160, 168, "Quản lý lượt dùng — chọn đúng model", { fs: 10.5 })
+  );
+
+  A.penstyle = wrap(
+    `<rect x="60" y="40" width="130" height="100" rx="8" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    [0,1,2,3].map(i=>`<line x1="76" y1="${62+i*18}" x2="${172-i*16}" y2="${62+i*18}" stroke="#C9BFAE" stroke-width="5" stroke-linecap="round"/>`).join("") +
+    `<path d="M210 56 L246 92 L210 128 L196 122 L226 92 L204 70 Z" fill="${C.purple}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M196 122 l-8 18 18 -8 Z" fill="${C.ink}"/>` +
+    txt(160, 170, "Viết đúng giọng văn của riêng bạn", { fs: 10.5 })
+  );
+
+  A.cleanwrite = wrap(
+    `<rect x="64" y="36" width="120" height="108" rx="8" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<line x1="80" y1="58" x2="168" y2="58" stroke="#C9BFAE" stroke-width="5" stroke-linecap="round"/>` +
+    `<line x1="80" y1="78" x2="150" y2="78" stroke="#C9BFAE" stroke-width="5" stroke-linecap="round"/>` +
+    `<line x1="80" y1="98" x2="160" y2="98" stroke="#C9BFAE" stroke-width="5" stroke-linecap="round"/>` +
+    txt(232, 70, "✨", { fs: 30 }) +
+    `<path d="M214 96 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6 Z" fill="${C.gold}"/>` +
+    txt(160, 170, "Bớt «mùi AI» — văn tự nhiên như người", { fs: 10 })
+  );
+
+  A.team = wrap(
+    `<circle cx="120" cy="74" r="22" fill="${C.terra}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M86 128 a34 30 0 0 1 68 0 Z" fill="${C.terra}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<circle cx="200" cy="74" r="22" fill="${C.blue}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M166 128 a34 30 0 0 1 68 0 Z" fill="${C.blue}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(160, 168, "Chia sẻ Projects & Skills cho cả đội", { fs: 10.5 })
+  );
+
+  A.puzzle = wrap(
+    `<path d="M96 60 h40 a12 12 0 0 1 24 0 h40 v40 a12 12 0 0 1 0 24 v32 h-40 a12 12 0 0 0 -24 0 h-40 v-32 a12 12 0 0 0 0 -24 Z" fill="${C.purple}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M200 60 h24 v40 a12 12 0 0 1 0 24 v32 h-24" fill="${C.gold}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(160, 170, "Plugin: gói trọn bộ công cụ cho một quy trình", { fs: 10 })
+  );
+
+  A.rewind = wrap(
+    `<circle cx="160" cy="86" r="54" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<path d="M150 66 L124 86 L150 106 Z M178 66 L152 86 L178 106 Z" fill="${C.blue}"/>` +
+    `<path d="M196 60 a44 44 0 1 1 -12 -10" fill="none" stroke="${C.green}" stroke-width="4"/>` +
+    `<path d="M196 44 l4 20 -20 -2 Z" fill="${C.green}"/>` +
+    txt(160, 168, "Checkpoint & /rewind — thử nghiệm an toàn", { fs: 10 })
+  );
+
+  A.gearbolt = wrap(
+    `<circle cx="130" cy="90" r="40" fill="none" stroke="${C.slate}" stroke-width="14"/>` +
+    [0,45,90,135,180,225,270,315].map(a=>{const r=a*Math.PI/180;const x=130+Math.cos(r)*52,y=90+Math.sin(r)*52;return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="6" fill="${C.slate}"/>`;}).join("") +
+    `<path d="M210 50 L188 96 L208 96 L192 138 L236 84 L214 84 Z" fill="${C.gold}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    txt(160, 170, "Hooks: tự động chạy tại mỗi sự kiện", { fs: 10.5 })
+  );
+
+  A.desktopagent = wrap(
+    `<rect x="74" y="36" width="172" height="104" rx="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<rect x="74" y="36" width="172" height="20" rx="10" fill="${C.slate}"/>` +
+    `<circle cx="88" cy="46" r="3.5" fill="#fff"/><circle cx="100" cy="46" r="3.5" fill="#fff"/>` +
+    txt(132, 84, "🤖", { fs: 26 }) +
+    `<path d="M168 80 h54 M168 80 l-8 -6 M168 80 l-8 6" stroke="${C.terra}" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+    `<rect x="176" y="92" width="56" height="9" rx="4" fill="#C9BFAE"/>` +
+    `<rect x="176" y="106" width="40" height="9" rx="4" fill="#C9BFAE"/>` +
+    `<rect x="138" y="148" width="44" height="6" rx="3" fill="${C.ink}"/>` +
+    txt(160, 172, "Claude tự thao tác trên máy của bạn", { fs: 10.5 })
+  );
+
+  A.bullseye = wrap(
+    `<circle cx="160" cy="88" r="56" fill="${C.paper}" stroke="${C.ink}" stroke-width="1.5"/>` +
+    `<circle cx="160" cy="88" r="38" fill="none" stroke="${C.terra}" stroke-width="3"/>` +
+    `<circle cx="160" cy="88" r="20" fill="none" stroke="${C.terra}" stroke-width="3"/>` +
+    `<circle cx="160" cy="88" r="7" fill="${C.terra}"/>` +
+    `<path d="M196 52 l34 -18 -10 24 24 -8 -22 22" fill="${C.gold}" stroke="${C.ink}" stroke-width="1.2"/>` +
+    txt(160, 170, "Nói mục tiêu — để Claude tự tìm cách", { fs: 10.5 })
+  );
+
   return A;
 })();
