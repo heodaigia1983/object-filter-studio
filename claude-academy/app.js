@@ -194,6 +194,20 @@ function sfx(kind) {
 const MUSIC = {
   playing: false, master: null, _gen: 0, _chordT: null, _pluckT: null,
   _ttsHold: false, videoHold: false,
+  // Một nốt PIANO: cộng nhiều hài âm + bao âm đánh-rồi-tắt dần như dây đàn thật
+  _note(ctx, dest, freq, t, dur, vel) {
+    const partials = [[1, 1.0, 1.0], [2, 0.5, 0.7], [3, 0.28, 0.5], [4, 0.14, 0.4], [5, 0.07, 0.3]];
+    for (const [mult, g, decay] of partials) {
+      const o = ctx.createOscillator(), gain = ctx.createGain();
+      o.type = "sine"; o.frequency.value = freq * mult;
+      const peak = g * vel, end = t + dur * decay;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(peak, t + 0.006);          // gõ phím: lên rất nhanh
+      gain.gain.exponentialRampToValueAtTime(0.0001, end);          // ngân tắt dần
+      o.connect(gain); gain.connect(dest);
+      o.start(t); o.stop(end + 0.05);
+    }
+  },
   start() {
     if (!FX.music || this.playing || this._ttsHold || this.videoHold || !CURRENT) return;
     let ctx;
@@ -202,52 +216,41 @@ const MUSIC = {
     this.playing = true;
     const gen = ++this._gen;
     const master = ctx.createGain();
-    master.gain.setValueAtTime(.0001, ctx.currentTime);
-    master.gain.exponentialRampToValueAtTime(.05, ctx.currentTime + 2.5);
+    master.gain.setValueAtTime(0.0001, ctx.currentTime);
+    master.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 2.5); // vào nhẹ nhàng
     const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass"; lp.frequency.value = 1100;
+    lp.type = "lowpass"; lp.frequency.value = 2600; // bớt chói, ấm như piano thu trong phòng
+    // tiếng vang nhẹ tạo không gian
+    const delay = ctx.createDelay(); delay.delayTime.value = 0.36;
+    const fb = ctx.createGain(); fb.gain.value = 0.26;
+    const wet = ctx.createGain(); wet.gain.value = 0.35;
     master.connect(lp); lp.connect(ctx.destination);
+    lp.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(ctx.destination);
     this.master = master;
-    const chords = [
-      [130.81, 164.81, 196.00, 246.94], // Cmaj7
-      [110.00, 130.81, 164.81, 196.00], // Am7
-      [87.31, 110.00, 130.81, 164.81],  // Fmaj7
-      [98.00, 123.47, 146.83, 164.81]   // G6
+    // Vòng hợp âm lo-fi I–vi–IV–V (Đô trưởng): [bass, các nốt hợp âm...]
+    const bars = [
+      [65.41, [130.81, 164.81, 196.00, 246.94]], // Cmaj7
+      [55.00, [110.00, 130.81, 164.81, 196.00]], // Am7
+      [43.65, [87.31, 110.00, 130.81, 164.81]],  // Fmaj7
+      [49.00, [98.00, 123.47, 146.83, 174.61]]   // G7
     ];
-    let ci = 0;
-    const playChord = () => {
+    const penta = [523.25, 587.33, 659.25, 783.99, 880.00]; // giai điệu ngẫu nhiên
+    const BAR = 3.4;
+    let bi = 0;
+    const playBar = () => {
       if (gen !== this._gen) return;
-      const t = ctx.currentTime, dur = 9;
-      chords[ci % chords.length].forEach(f => {
-        [0, 3].forEach(det => { // 2 lớp lệch nhẹ cho âm ấm
-          const o = ctx.createOscillator(), g = ctx.createGain();
-          o.type = "sine"; o.frequency.value = f; o.detune.value = det;
-          g.gain.setValueAtTime(.0001, t);
-          g.gain.linearRampToValueAtTime(.5, t + 2.2);
-          g.gain.setValueAtTime(.5, t + dur - 2.2);
-          g.gain.linearRampToValueAtTime(.0001, t + dur);
-          o.connect(g); g.connect(master);
-          o.start(t); o.stop(t + dur + .1);
-        });
-      });
-      ci++;
-      this._chordT = setTimeout(playChord, (dur - 2.2) * 1000); // gối đầu cho liền mạch
+      const t = ctx.currentTime + 0.05;
+      const [bass, notes] = bars[bi % bars.length];
+      this._note(ctx, master, bass, t, BAR * 0.95, 0.18);           // nốt trầm giữ nhịp
+      notes.forEach((f, k) => this._note(ctx, master, f, t + 0.14 + k * 0.16, BAR * 0.8, 0.12)); // rải hợp âm
+      if (Math.random() < 0.6) {                                     // thỉnh thoảng điểm một nốt giai điệu
+        const f = penta[Math.floor(Math.random() * penta.length)];
+        this._note(ctx, master, f, t + 0.8 + Math.random() * 1.4, 1.8, 0.10);
+      }
+      bi++;
+      this._chordT = setTimeout(playBar, BAR * 1000);
     };
-    const pluck = () => {
-      if (gen !== this._gen) return;
-      const notes = [523.25, 587.33, 659.25, 783.99, 880.00]; // pentatonic Đô trưởng
-      const t = ctx.currentTime;
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "triangle";
-      o.frequency.value = notes[Math.floor(Math.random() * notes.length)];
-      g.gain.setValueAtTime(.2, t);
-      g.gain.exponentialRampToValueAtTime(.0001, t + 1.1);
-      o.connect(g); g.connect(master);
-      o.start(t); o.stop(t + 1.2);
-      this._pluckT = setTimeout(pluck, 1800 + Math.random() * 2800);
-    };
-    playChord();
-    this._pluckT = setTimeout(pluck, 2200);
+    playBar();
   },
   stop() {
     if (!this.playing) return;
@@ -258,9 +261,9 @@ const MUSIC = {
       try {
         m.gain.cancelScheduledValues(audioCtx.currentTime);
         m.gain.setValueAtTime(Math.max(m.gain.value, .0001), audioCtx.currentTime);
-        m.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + .5); // tắt êm
+        m.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + .6); // tắt êm
       } catch { /* bỏ qua */ }
-      setTimeout(() => { try { m.disconnect(); } catch { /* bỏ qua */ } }, 700);
+      setTimeout(() => { try { m.disconnect(); } catch { /* bỏ qua */ } }, 800);
     }
   },
   // cố gắng phát (gọi sau mỗi lần chạm / sau khi TTS kết thúc)
@@ -300,7 +303,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.0.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.1.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)

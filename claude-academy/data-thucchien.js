@@ -12,7 +12,7 @@ const COURSES_THUCCHIEN = [
   level: "Nhập môn", duration: "≈ 35 phút",
   lessons: [
     {
-      id: "tcq-1", title: "5 phút đầu tiên với Claude", time: "8 phút", art: "chat",
+      id: "tcq-1", title: "5 phút đầu tiên với Claude", time: "8 phút", art: "rocket", art2: "chat",
       sections: [
         { h: "Mở Claude và nói chuyện như với người", p: [
           "Vào claude.ai (hoặc tải app Android/iOS/desktop), đăng nhập miễn phí và gõ câu hỏi đầu tiên. Không cần học cú pháp gì cả — bạn viết như đang nhắn cho một đồng nghiệp giỏi.",
@@ -34,7 +34,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcq-2", title: "Thói quen biến Claude thành trợ lý hằng ngày", time: "9 phút", art: "daily",
+      id: "tcq-2", title: "Thói quen biến Claude thành trợ lý hằng ngày", time: "9 phút", art: "daily", art2: "checklist",
       sections: [
         { h: "Đặt Claude vào quy trình thật của bạn", p: [
           "Người dùng giỏi không coi Claude là «đồ chơi hỏi đáp» mà là một bước trong công việc: soạn email khó, chuẩn bị dàn ý họp, dịch tài liệu, kiểm tra lại lập luận trước khi gửi đi.",
@@ -56,7 +56,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcq-3", title: "Không lo hết lượt dùng Claude", time: "9 phút", art: "optimize",
+      id: "tcq-3", title: "Không lo hết lượt dùng Claude", time: "9 phút", art: "optimize", art2: "gauge",
       sections: [
         { h: "Vì sao bị giới hạn?", p: [
           "Giới hạn lượt dùng tính theo lượng xử lý trong một khoảng thời gian, và phụ thuộc model: model mạnh nhất (Opus) «ăn» hạn mức nhanh hơn nhiều so với model nhanh (Haiku/Sonnet). Cuộc trò chuyện càng dài, mỗi lần trả lời càng tốn vì Claude phải đọc lại toàn bộ lịch sử."
@@ -102,7 +102,7 @@ const COURSES_THUCCHIEN = [
   level: "Trung cấp", duration: "≈ 45 phút",
   lessons: [
     {
-      id: "tcw-1", title: "Prompt kiểu mới: nói mục tiêu, đừng ra lệnh từng bước", time: "9 phút", art: "prompt",
+      id: "tcw-1", title: "Prompt kiểu mới: nói mục tiêu, đừng ra lệnh từng bước", time: "9 phút", art: "bullseye", art2: "prompt",
       sections: [
         { h: "Đừng micro-manage Claude", p: [
           "Cách prompt cũ: liệt kê thật chi tiết từng bước phải làm. Với model hiện đại, cách hiệu quả hơn là nói rõ MỤC TIÊU và TIÊU CHÍ THÀNH CÔNG, rồi để Claude tự tìm đường — giống giao việc cho một chuyên gia thay vì đọc cho nhân viên chép.",
@@ -122,7 +122,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcw-2", title: "Để Claude viết đúng giọng của bạn", time: "10 phút", art: "fewshot",
+      id: "tcw-2", title: "Để Claude viết đúng giọng của bạn", time: "10 phút", art: "penstyle", art2: "fewshot",
       sections: [
         { h: "Bí quyết: bạn chỉ là một «text file»", p: [
           "Phong cách viết của bạn có thể được mô tả thành văn bản và đưa cho Claude. Cách mạnh nhất là dạy bằng VÍ DỤ THẬT: dán 2–3 bài bạn đã viết và nói «hãy viết theo đúng giọng văn, nhịp câu và cách dùng từ trong các mẫu này»."
@@ -143,7 +143,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcw-3", title: "Xoá «mùi AI» khỏi bài viết", time: "9 phút", art: "format",
+      id: "tcw-3", title: "Xoá «mùi AI» khỏi bài viết", time: "9 phút", art: "cleanwrite", art2: "format",
       sections: [
         { h: "Những dấu hiệu lộ bài do AI viết", list: [
           "Mẫu câu «Không phải X, mà là Y» lặp đi lặp lại — dấu hiệu rõ nhất.",
@@ -166,7 +166,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcw-4", title: "Bộ prompt mẫu dùng được ngay", time: "8 phút", art: "structure",
+      id: "tcw-4", title: "Bộ prompt mẫu dùng được ngay", time: "8 phút", art: "structure", art2: "chain",
       sections: [
         { h: "Mẫu cho việc viết", p: [
           "«Bạn là [vai trò]. Viết [loại nội dung] cho [đối tượng] nhằm [mục tiêu]. Giọng: [mô tả]. Độ dài: [...]. Tránh: [...]. Trước khi viết, hỏi mình nếu thiếu thông tin.»"
@@ -210,7 +210,7 @@ const COURSES_THUCCHIEN = [
   level: "Trung cấp", duration: "≈ 40 phút",
   lessons: [
     {
-      id: "tco-1", title: "Bảng tính Excel chuyên nghiệp", time: "9 phút", art: "format",
+      id: "tco-1", title: "Bảng tính Excel chuyên nghiệp", time: "9 phút", art: "spreadsheet", art2: "format",
       sections: [
         { h: "Claude làm được gì với Excel", p: [
           "Claude tạo được file Excel (.xlsx) thật có công thức, định dạng, nhiều sheet và biểu đồ — không chỉ bảng văn bản. Bạn mô tả nhu cầu, Claude dựng file để tải về."
@@ -232,7 +232,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tco-2", title: "Slide thuyết trình bằng AI", time: "9 phút", art: "artifact",
+      id: "tco-2", title: "Slide thuyết trình bằng AI", time: "9 phút", art: "slidedeck", art2: "artifact",
       sections: [
         { h: "Từ ý tưởng đến bộ slide", p: [
           "Claude giúp cả hai khâu: lên DÀN Ý (cấu trúc câu chuyện, số slide, ý mỗi slide) và TẠO NỘI DUNG từng slide. Với kỹ năng tạo PowerPoint, Claude xuất được file .pptx để mở trong PowerPoint/Google Slides."
@@ -254,7 +254,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tco-3", title: "Claude cho dân thiết kế", time: "9 phút", art: "quality",
+      id: "tco-3", title: "Claude cho dân thiết kế", time: "9 phút", art: "palette", art2: "quality",
       sections: [
         { h: "Trợ thủ ý tưởng và nội dung thiết kế", p: [
           "Claude không thay phần mềm thiết kế, nhưng cực mạnh ở khâu tư duy: brainstorm concept, viết nội dung (copy) cho banner/poster, gợi ý bảng màu, phân tích bố cục, viết brief cho designer hay cho công cụ tạo ảnh."
@@ -299,7 +299,7 @@ const COURSES_THUCCHIEN = [
   level: "Nâng cao", duration: "≈ 40 phút",
   lessons: [
     {
-      id: "tcc-1", title: "Claude Cowork là gì?", time: "9 phút", art: "workflow",
+      id: "tcc-1", title: "Claude Cowork là gì?", time: "9 phút", art: "desktopagent", art2: "workflow",
       sections: [
         { h: "Đồng nghiệp số sống trên máy của bạn", p: [
           "Claude Cowork là tính năng trong ứng dụng desktop (macOS và Windows) cho phép Claude truy cập có kiểm soát vào các thư mục trên máy bạn: đọc, sửa, tạo và sắp xếp file trực tiếp. Nó hoạt động như một agent — tự lập kế hoạch và làm nhiều bước trong khi bạn làm việc khác.",
@@ -322,7 +322,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcc-2", title: "Cowork kết hợp Projects & Plugins", time: "10 phút", art: "projects",
+      id: "tcc-2", title: "Cowork kết hợp Projects & Plugins", time: "10 phút", art: "projects", art2: "share",
       sections: [
         { h: "Sức mạnh nhân đôi", p: [
           "Cowork mạnh hơn nhiều khi kết hợp: Projects cho ngữ cảnh và quy tắc lâu dài; Plugins/Connectors để với tới Gmail, Google Drive, Notion, Slack; Skills để Cowork làm đúng quy trình của bạn mỗi lần."
@@ -344,7 +344,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcc-3", title: "Claude làm trợ lý máy tính cá nhân", time: "9 phút", art: "tooluse",
+      id: "tcc-3", title: "Claude làm trợ lý máy tính cá nhân", time: "9 phút", art: "tooluse", art2: "checklist",
       sections: [
         { h: "Từ trả lời câu hỏi đến LÀM VIỆC", p: [
           "Bước tiến lớn: Claude không chỉ nói cho bạn cách làm, mà tự làm trên máy. Đây là dạng «computer use / desktop agent» — Claude thao tác file, chạy các bước, và báo lại kết quả."
@@ -390,7 +390,7 @@ const COURSES_THUCCHIEN = [
   level: "Nâng cao", duration: "≈ 35 phút",
   lessons: [
     {
-      id: "tce-1", title: "Skills: dạy Claude làm theo cách của bạn", time: "10 phút", art: "skillfolder",
+      id: "tce-1", title: "Skills: dạy Claude làm theo cách của bạn", time: "10 phút", art: "skillfolder", art2: "quality",
       sections: [
         { h: "Skill giải quyết việc lặp lại", p: [
           "Nếu mỗi tuần bạn đều nhắc Claude cùng một quy trình (cách trình bày báo cáo, giọng văn thương hiệu, các bước kiểm tra), hãy đóng gói nó thành một Skill. Từ đó Claude tự áp dụng đúng lúc mà bạn không phải nhắc lại."
@@ -411,7 +411,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tce-2", title: "Connectors: nối Claude với dữ liệu của bạn", time: "9 phút", art: "connect",
+      id: "tce-2", title: "Connectors: nối Claude với dữ liệu của bạn", time: "9 phút", art: "connect", art2: "inbox",
       sections: [
         { h: "Claude với tới công cụ bạn đang dùng", p: [
           "Connectors cho phép Claude truy cập trực tiếp Gmail, Google Calendar, Google Drive, Notion, Slack... Sau khi kết nối, bạn nói bằng lời thường: «tóm tắt email chưa đọc tuần này», «tìm file kế hoạch Q3 trong Drive», «lịch ngày mai có gì gấp?»."
@@ -432,7 +432,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tce-3", title: "Ghép Skills + Connectors thành quy trình tự động", time: "8 phút", art: "share",
+      id: "tce-3", title: "Ghép Skills + Connectors thành quy trình tự động", time: "8 phút", art: "share", art2: "workflow",
       sections: [
         { h: "Khi hai thứ gặp nhau", p: [
           "Connectors cho Claude KHẢ NĂNG chạm tới dữ liệu; Skills dạy Claude CÁCH xử lý dữ liệu đó. Ghép lại bạn có quy trình tự động gần như một nhân viên thật."
@@ -477,7 +477,7 @@ const COURSES_THUCCHIEN = [
   level: "Nâng cao", duration: "≈ 30 phút",
   lessons: [
     {
-      id: "tcr-1", title: "Claude cho team & doanh nghiệp", time: "9 phút", art: "delegate",
+      id: "tcr-1", title: "Claude cho team & doanh nghiệp", time: "9 phút", art: "team", art2: "delegate",
       sections: [
         { h: "Vì sao team nên dùng chung", p: [
           "Khi cả đội dùng Claude, giá trị lớn nhất không phải mỗi người tự hỏi, mà là CHIA SẺ tài sản: Projects chung cho dự án, Skills chuẩn hoá quy trình, và kho prompt mẫu của team. Một người tìm ra cách hay, cả đội hưởng lợi."
@@ -498,7 +498,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tcr-2", title: "Lấy chứng chỉ Claude — ghi điểm sự nghiệp", time: "9 phút", art: "cert",
+      id: "tcr-2", title: "Lấy chứng chỉ Claude — ghi điểm sự nghiệp", time: "9 phút", art: "cert", art2: "checklist",
       sections: [
         { h: "Vì sao nên có chứng chỉ", p: [
           "Anthropic Academy cấp chứng chỉ miễn phí khi bạn hoàn thành khoá và vượt bài kiểm tra. Đây là bằng chứng kỹ năng AI để ghi vào CV, hồ sơ LinkedIn — ngày càng được nhà tuyển dụng coi trọng."
@@ -586,7 +586,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tccp-3", title: "MCP & Hooks", time: "12 phút", art: "mcp", art2: "workflow",
+      id: "tccp-3", title: "MCP & Hooks", time: "12 phút", art: "mcp", art2: "gearbolt",
       sections: [
         { h: "MCP — nối Claude Code với hệ thống ngoài", p: [
           "Lệnh claude mcp add kết nối Claude Code với MCP server: GitHub, database, filesystem, trình duyệt... Claude khi đó dùng được các công cụ này như công cụ có sẵn — đọc schema, chạy query, thao tác repo."
@@ -606,7 +606,7 @@ const COURSES_THUCCHIEN = [
       ]
     },
     {
-      id: "tccp-4", title: "Plugins & Checkpoints", time: "11 phút", art: "share", art2: "compact",
+      id: "tccp-4", title: "Plugins & Checkpoints", time: "11 phút", art: "puzzle", art2: "rewind",
       sections: [
         { h: "Plugins — đóng gói trọn bộ quy trình", p: [
           "Plugin gói nhiều thành phần lại với nhau: slash commands + subagents + skills + hooks + cấu hình MCP — thành một giải pháp hoàn chỉnh cho một quy trình. Ví dụ: plugin pr-review, devops-automation, documentation. Cài một lần là cả nhóm có đủ công cụ chuẩn cho quy trình đó."
