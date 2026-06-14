@@ -1,34 +1,41 @@
 /* Claude Academy — 3D Claymorphism UI
-   Violet #7c3aed · Plus Jakarta Sans · tactile press · shimmer · bouncy motion */
+   Bảng màu ấm 2026 lấy cảm hứng thương hiệu Claude/Anthropic:
+   kem ngà · đất nung (coral clay) · mực ấm · Plus Jakarta Sans */
 
 :root {
-  --violet: #7c3aed;
-  --violet-deep: #5b21b6;
-  --violet-soft: #a78bfa;
-  --bg: #efeafb;
-  --bg2: #e4dcf7;
-  --surface: #ffffff;
-  --surface-2: #f6f3fd;
-  --ink: #2a2440;
-  --muted: #7a7295;
-  --green: #34c98e;
-  --gold: #f5a623;
-  --rose: #f06595;
-  --clay-out: 0 10px 24px rgba(124, 58, 237, .16), 0 2px 5px rgba(42, 36, 64, .08);
-  --clay-in: inset 0 2px 4px rgba(255, 255, 255, .9), inset 0 -5px 10px rgba(124, 58, 237, .07);
-  --clay-press: 0 3px 8px rgba(124, 58, 237, .14), 0 1px 2px rgba(42, 36, 64, .08);
+  --violet: #d9734e;        /* coral đất nung — màu chủ đạo (giữ tên biến cũ để tương thích) */
+  --violet-deep: #b5532f;
+  --violet-soft: #ecb59c;
+  --bg: #f6f1e8;            /* kem ngà ấm */
+  --bg2: #efe5d4;
+  --surface: #fffdf8;
+  --surface-2: #f3ebdd;
+  --ink: #2c2722;           /* mực nâu ấm */
+  --muted: #8c8073;
+  --green: #4f9d77;
+  --gold: #d8943a;
+  --rose: #e08a63;          /* coral nhạt ấm cho gradient */
+  --clay-out: 0 10px 26px rgba(178, 96, 62, .18), 0 2px 6px rgba(44, 39, 34, .07);
+  --clay-in: inset 0 2px 4px rgba(255, 255, 255, .85), inset 0 -5px 10px rgba(178, 96, 62, .08);
+  --clay-press: 0 3px 8px rgba(178, 96, 62, .16), 0 1px 2px rgba(44, 39, 34, .08);
   --bounce: cubic-bezier(.34, 1.56, .64, 1);
   --r: 24px;
 }
 html.dark {
-  --bg: #171228;
-  --bg2: #1f1836;
-  --surface: #241b40;
-  --surface-2: #2c2250;
-  --ink: #efeafb;
-  --muted: #9d93bd;
-  --clay-out: 0 10px 24px rgba(0, 0, 0, .45), 0 2px 5px rgba(0, 0, 0, .3);
-  --clay-in: inset 0 2px 4px rgba(255, 255, 255, .07), inset 0 -5px 10px rgba(0, 0, 0, .25);
+  --violet: #e0865f;
+  --violet-deep: #c96440;
+  --violet-soft: #a86348;
+  --bg: #1d1813;
+  --bg2: #251f17;
+  --surface: #2a231b;
+  --surface-2: #342c22;
+  --ink: #f6f1e8;
+  --muted: #b3a795;
+  --green: #5bb088;
+  --gold: #e0a94e;
+  --rose: #e0865f;
+  --clay-out: 0 10px 26px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .3);
+  --clay-in: inset 0 2px 4px rgba(255, 255, 255, .06), inset 0 -5px 10px rgba(0, 0, 0, .25);
   --clay-press: 0 3px 8px rgba(0, 0, 0, .4);
 }
 
@@ -37,10 +44,28 @@ html.dark {
 html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: radial-gradient(1200px 600px at 50% -10%, var(--bg2), var(--bg));
+  background: radial-gradient(1100px 560px at 50% -8%, var(--bg2), var(--bg));
   color: var(--ink);
   line-height: 1.6;
   min-height: 100dvh;
+}
+/* Lớp nền trang trí: vầng sáng coral ấm + hoạ tiết tia sáng kiểu Anthropic (rất mờ) */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(520px 360px at 85% 6%, rgba(217, 115, 78, .16), transparent 70%),
+    radial-gradient(460px 380px at 10% 92%, rgba(79, 157, 119, .12), transparent 70%),
+    radial-gradient(600px 420px at 50% 50%, rgba(216, 148, 58, .07), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='%23d9734e' fill-opacity='0.05'%3E%3Cpath d='M40 22c2 9 7 14 16 16-9 2-14 7-16 16-2-9-7-14-16-16 9-2 14-7 16-16z'/%3E%3Cpath d='M168 120c1.5 7 5.5 11 12.5 12.5-7 1.5-11 5.5-12.5 12.5-1.5-7-5.5-11-12.5-12.5 7-1.5 11-5.5 12.5-12.5z'/%3E%3Cpath d='M108 168c1 5 4 8 9 9-5 1-8 4-9 9-1-5-4-8-9-9 5-1 8-4 9-9z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+}
+html.dark body::before {
+  background:
+    radial-gradient(520px 360px at 85% 6%, rgba(224, 134, 95, .14), transparent 70%),
+    radial-gradient(460px 380px at 10% 92%, rgba(91, 176, 136, .10), transparent 70%),
+    radial-gradient(600px 420px at 50% 50%, rgba(224, 169, 78, .06), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='%23e0865f' fill-opacity='0.06'%3E%3Cpath d='M40 22c2 9 7 14 16 16-9 2-14 7-16 16-2-9-7-14-16-16 9-2 14-7 16-16z'/%3E%3Cpath d='M168 120c1.5 7 5.5 11 12.5 12.5-7 1.5-11 5.5-12.5 12.5-1.5-7-5.5-11-12.5-12.5 7-1.5 11-5.5 12.5-12.5z'/%3E%3Cpath d='M108 168c1 5 4 8 9 9-5 1-8 4-9 9-1-5-4-8-9-9 5-1 8-4 9-9z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
 }
 /* lớp mờ chuyển tiếp để nội dung không lộ lem nhem sau thanh điều hướng dưới */
 body::after {

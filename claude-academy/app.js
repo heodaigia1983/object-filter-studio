@@ -294,7 +294,7 @@ const MUSIC = {
 };
 
 function confetti() {
-  const colors = ["#7c3aed", "#f06595", "#34c98e", "#f5a623", "#4dabf7"];
+  const colors = ["#d9734e", "#e08a63", "#4f9d77", "#d8943a", "#c96440"];
   const box = document.createElement("div");
   box.className = "confetti";
   const cx = innerWidth / 2, cy = innerHeight / 2.4;
@@ -315,7 +315,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.4.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.5.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
@@ -454,7 +454,7 @@ function renderHome() {
           <circle cx="44" cy="44" r="${R}" fill="none" stroke="url(#gr)" stroke-width="9" stroke-linecap="round"
             stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - t.pct / 100)}"/>
           <defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#f06595"/>
+            <stop offset="0" stop-color="#d9734e"/><stop offset="1" stop-color="#e08a63"/>
           </linearGradient></defs>
         </svg>
         <b>${t.pct}%</b>
@@ -551,7 +551,7 @@ function renderExplore() {
   <div class="screen">
     <div class="greet pop"><h1>Khám phá 🧭</h1><p>Thi thử, lộ trình, kỳ thi chứng chỉ và tài nguyên chính thức.</p></div>
 
-    <a class="course-card clay shimmer pressable pop" style="--cc:#7c3aed;--d:.03s" href="#/mock">
+    <a class="course-card clay shimmer pressable pop" style="--cc:#d9734e;--d:.03s" href="#/mock">
       <div class="cc-icon">📝</div>
       <div class="cc-main">
         <div class="cc-tag">Mô phỏng phòng thi</div>
@@ -1052,7 +1052,7 @@ function renderInstall() {
       const g = guides[p];
       return `
       <div class="info-card clay shimmer pop" style="--d:${.06 + i * .05}s">
-        <h3>${g.ico} ${g.name}${i === 0 ? ' <span class="chip vio" style="--cc:#7c3aed">thiết bị của bạn</span>' : ""}</h3>
+        <h3>${g.ico} ${g.name}${i === 0 ? ' <span class="chip vio" style="--cc:#d9734e">thiết bị của bạn</span>' : ""}</h3>
         <ol style="padding-left:20px;margin-top:8px">
           ${g.steps.map(s => `<li style="margin-bottom:6px;font-size:14px;font-weight:500;color:var(--ink)">${s}</li>`).join("")}
         </ol>
@@ -1167,12 +1167,12 @@ function downloadCertificate(c, name, date) {
   // nền
   x.fillStyle = "#efeafb"; x.fillRect(0, 0, W, H);
   x.fillStyle = "#ffffff"; roundRect(x, 50, 50, W - 100, H - 100, 32); x.fill();
-  x.lineWidth = 8; x.strokeStyle = c.color || "#7c3aed"; roundRect(x, 50, 50, W - 100, H - 100, 32); x.stroke();
+  x.lineWidth = 8; x.strokeStyle = c.color || "#d9734e"; roundRect(x, 50, 50, W - 100, H - 100, 32); x.stroke();
   x.textAlign = "center";
-  x.fillStyle = c.color || "#7c3aed"; x.font = "120px serif"; x.fillText("🎓", W / 2, 230);
+  x.fillStyle = c.color || "#d9734e"; x.font = "120px serif"; x.fillText("🎓", W / 2, 230);
   x.fillStyle = "#7a7295"; x.font = "bold 30px system-ui,sans-serif"; x.fillText("CHỨNG NHẬN HOÀN THÀNH", W / 2, 300);
   x.fillStyle = "#2a2440"; x.font = "bold 56px system-ui,sans-serif"; wrapText(x, c.title, W / 2, 380, W - 220, 60);
-  x.fillStyle = "#7c3aed"; x.font = "italic bold 64px Georgia,serif"; x.fillText(name, W / 2, 520);
+  x.fillStyle = "#b5532f"; x.font = "italic bold 64px Georgia,serif"; x.fillText(name, W / 2, 520);
   x.fillStyle = "#2a2440"; x.font = "28px system-ui,sans-serif";
   x.fillText(`đã hoàn thành toàn bộ bài học · đạt ${P.quiz[c.id]}% bài kiểm tra`, W / 2, 580);
   x.fillStyle = "#7a7295"; x.font = "26px system-ui,sans-serif";
