@@ -1,5 +1,5 @@
 // Service worker — cho phép học offline sau lần mở đầu tiên
-const CACHE = "claude-academy-v19";
+const CACHE = "claude-academy-v20";
 const ASSETS = [
   "./",
   "./index.html",

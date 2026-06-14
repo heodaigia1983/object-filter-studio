@@ -329,7 +329,7 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.9.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.9.1"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
 
 // Tài nguyên của tác giả (playlist video + thư mục tài liệu Drive)
 const AUTHOR_PLAYLIST = "PLZDO3QBqL6cKq07P5sVfay2Ih6GXslCDb";
@@ -892,7 +892,7 @@ function renderCourse(cid) {
     ${c.videos.length ? `
     <h2 class="sec-title pop">🎬 Video minh hoạ <small>từ Anthropic</small></h2>
     ${c.videos.map(v => `
-    <div class="video-card clay shimmer pressable pop" data-vid="${v.id}" role="button" tabindex="0">
+    <div class="video-card clay pressable pop" data-vid="${v.id}" role="button" tabindex="0">
       <div class="video-thumb">
         <img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="${esc(v.title)}" loading="lazy">
         <span class="video-play">▶</span>
@@ -1165,7 +1165,7 @@ function renderLibrary() {
     </div>
 
     <h2 class="sec-title pop" style="--d:.05s">🎬 Playlist video</h2>
-    <div class="video-card clay shimmer pressable pop" id="plCard" role="button" tabindex="0" style="--d:.06s">
+    <div class="video-card clay pressable pop" id="plCard" role="button" tabindex="0" style="--d:.06s">
       <div class="video-thumb" id="plThumb">
         <div class="pl-panel"><span class="video-play">▶</span><b>Phát toàn bộ playlist</b><small>Các video Claude của tác giả · phụ đề tiếng Việt bật được</small></div>
       </div>
