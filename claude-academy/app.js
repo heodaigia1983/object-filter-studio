@@ -329,7 +329,11 @@ function confetti() {
 const COPYRIGHT = "© 2026 Lê Văn Thảo. Bảo lưu mọi quyền.";
 const CONTACT = "heodaigia1983@gmail.com";
 const PHONE = "05.666668.47";
-const APP_VERSION = "2.6.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+const APP_VERSION = "2.7.0"; // hiện trong Hồ sơ; đổi mỗi lần phát hành để app báo cập nhật
+
+// Tài nguyên của tác giả (playlist video + thư mục tài liệu Drive)
+const AUTHOR_PLAYLIST = "PLZDO3QBqL6cKq07P5sVfay2Ih6GXslCDb";
+const AUTHOR_DRIVE = "https://drive.google.com/drive/folders/14skzT5zgxc7UqC9VPGo0q2EzHv0OVvYa";
 
 // ── Cài đặt PWA (thêm vào màn hình chính) ──
 let deferredPrompt = null; // sự kiện cài đặt do trình duyệt cung cấp (Android/desktop)
@@ -571,6 +575,16 @@ function renderExplore() {
         <div class="cc-tag">Mô phỏng phòng thi</div>
         <h3>Thi thử chứng chỉ</h3>
         <p>Trộn câu hỏi nhiều khoá, bấm giờ, chấm đạt/rớt 80%.${P.mock && Object.keys(P.mock).length ? ` Tốt nhất: ${Math.max(...Object.values(P.mock))}%` : ""}</p>
+      </div>
+      <span class="lr-go">›</span>
+    </a>
+
+    <a class="course-card clay shimmer pressable pop" style="--cc:#4f9d77;--d:.045s" href="#/library">
+      <div class="cc-icon">📚</div>
+      <div class="cc-main">
+        <div class="cc-tag">Tài liệu tác giả</div>
+        <h3>Thư viện video & PDF</h3>
+        <p>Playlist video + kho tài liệu Claude của thầy Lê Văn Thảo.</p>
       </div>
       <span class="lr-go">›</span>
     </a>
@@ -1094,6 +1108,47 @@ function renderInstall() {
   };
 }
 
+// ───────────────────────── Thư viện của tác giả (video + tài liệu) ─────────────────────────
+function renderLibrary() {
+  TTS.stop(); renderChrome("explore");
+  app.innerHTML = `
+  <div class="screen">
+    ${backRow("#/explore", "Khám phá")}
+    <div class="course-hero clay shimmer pop">
+      <div class="ph-emoji" style="font-size:46px">📚</div>
+      <h1>Thư viện của tác giả</h1>
+      <p>Bộ video và tài liệu về Claude do thầy Lê Văn Thảo tổng hợp — xem ngay trong app.</p>
+    </div>
+
+    <h2 class="sec-title pop" style="--d:.05s">🎬 Playlist video</h2>
+    <div class="video-card clay shimmer pressable pop" id="plCard" role="button" tabindex="0" style="--d:.06s">
+      <div class="video-thumb" id="plThumb">
+        <div class="pl-panel"><span class="video-play">▶</span><b>Phát toàn bộ playlist</b><small>Các video Claude của tác giả · phụ đề tiếng Việt bật được</small></div>
+      </div>
+      <div class="video-meta"><b>Playlist: Claude — Lê Văn Thảo</b><small>Phát liên tục trong app · cần có mạng</small></div>
+    </div>
+    <a class="cert-row clay pressable pop" style="--d:.09s" href="https://youtube.com/playlist?list=${AUTHOR_PLAYLIST}" target="_blank" rel="noopener">
+      <span class="ce">▶️</span><span class="cert-main"><b>Mở trên YouTube</b><small>Xem ngoài app, lưu vào tài khoản của bạn</small></span><span class="cert-link">Mở ↗</span>
+    </a>
+
+    <h2 class="sec-title pop" style="--d:.12s">📄 Tài liệu PDF & video (Drive)</h2>
+    <a class="cert-row clay shimmer pressable pop" style="--d:.13s" href="${AUTHOR_DRIVE}" target="_blank" rel="noopener">
+      <span class="ce">📁</span>
+      <span class="cert-main"><b>Kho tài liệu Claude</b><small>PDF, video tổng hợp — mở thư mục Google Drive</small></span>
+      <span class="cert-link">Mở ↗</span>
+    </a>
+    <p class="foot-note" style="text-align:left;padding:10px 4px 0">💡 Để người học mở được tài liệu, thư mục Drive cần đặt chia sẻ ở chế độ «Bất kỳ ai có đường liên kết». Nếu anh muốn lồng từng video vào đúng từng khoá học, gửi em danh sách tiêu đề + link, em sẽ gắn vào bài phù hợp.</p>
+  </div>`;
+  const card = document.getElementById("plCard");
+  if (card) card.onclick = () => {
+    if (card.dataset.loaded) return; card.dataset.loaded = "1";
+    MUSIC.videoHold = true; MUSIC.stop(); TTS.stop();
+    document.getElementById("plThumb").innerHTML =
+      `<iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=${AUTHOR_PLAYLIST}&autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=vi&hl=vi"
+        title="Playlist video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+  };
+}
+
 // ───────────────────────── Tìm kiếm ─────────────────────────
 let searchIndex = null;
 function buildSearchIndex() {
@@ -1588,6 +1643,7 @@ function route() {
   else if (page === "srs") renderSRS();
   else if (page === "mock") { a ? renderMock(a) : renderMockSetup(); }
   else if (page === "search") renderSearch();
+  else if (page === "library") renderLibrary();
   else if (page === "cert" && a) renderCert(a);
   else if (page === "install") renderInstall();
   else if (page === "explore") renderExplore();
